@@ -1,0 +1,436 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --rer-ivory: #FAF6F0;
+    --rer-cream: #F3ECE0;
+    --rer-plum: #3A1042;
+    --rer-plum-dark: #280A2E;
+    --rer-berry: #8C2D56;
+    --rer-navy: #161F33;
+    --rer-gold: #B8862D;
+    --rer-gold-light: #D8B572;
+    --rer-border: #E5D9C5;
+    --rer-teal: #2E6F73;
+    --rer-blush: #C86D74;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #FAF6F0;
+    color: #161F33;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-serif-editorial {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+}
+
+.font-serif-editorial {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-sans-ui {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Subtle luxury gold shimmer & borders */
+.gold-divider {
+  background: linear-gradient(90deg, transparent 0%, #B8862D 50%, transparent 100%);
+  height: 1px;
+}
+
+.plum-gradient {
+  background: linear-gradient(135deg, #3A1042 0%, #240B2B 55%, #161F33 100%);
+}
+
+/* ==========================================================================
+   3D ANIMATED ROYAL MEDALLION LOGO & COUTURE NAVBAR STYLES
+   ========================================================================== */
+
+@keyframes logo3dFloat {
+  0% {
+    transform: perspective(900px) rotateY(-14deg) rotateX(6deg) translateY(0px) translateZ(8px);
+  }
+  25% {
+    transform: perspective(900px) rotateY(0deg) rotateX(-4deg) translateY(-3px) translateZ(14px);
+  }
+  50% {
+    transform: perspective(900px) rotateY(14deg) rotateX(6deg) translateY(0px) translateZ(8px);
+  }
+  75% {
+    transform: perspective(900px) rotateY(0deg) rotateX(4deg) translateY(2px) translateZ(12px);
+  }
+  100% {
+    transform: perspective(900px) rotateY(-14deg) rotateX(6deg) translateY(0px) translateZ(8px);
+  }
+}
+
+@keyframes goldHaloSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logoLightSweep {
+  0% {
+    transform: translateX(-140%) skewX(-25deg);
+  }
+  45%, 100% {
+    transform: translateX(220%) skewX(-25deg);
+  }
+}
+
+.logo-3d-stage {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.logo-3d-medallion {
+  position: relative;
+  transform-style: preserve-3d;
+  animation: logo3dFloat 6.5s ease-in-out infinite;
+  box-shadow:
+    0 14px 28px -6px rgba(58, 16, 66, 0.38),
+    0 6px 14px -3px rgba(184, 134, 45, 0.45),
+    inset 0 0 12px rgba(216, 181, 114, 0.55);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+}
+
+.group:hover .logo-3d-medallion {
+  animation-play-state: paused;
+  transform: perspective(900px) rotateY(18deg) rotateX(-8deg) scale(1.09) translateZ(20px);
+  box-shadow:
+    -10px 18px 34px -4px rgba(58, 16, 66, 0.5),
+    0 0 22px rgba(184, 134, 45, 0.75);
+}
+
+.logo-3d-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  padding: 3px;
+  background: conic-gradient(
+    from 0deg,
+    #B8862D,
+    #FAF6F0,
+    #3A1042,
+    #D8B572,
+    #8C2D56,
+    #F3ECE0,
+    #B8862D
+  );
+  animation: goldHaloSpin 9s linear infinite;
+  z-index: 0;
+}
+
+.logo-3d-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  animation: logoLightSweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.wordmark-3d {
+  text-shadow:
+    0 2px 0 rgba(216, 181, 114, 0.45),
+    0 6px 14px rgba(58, 16, 66, 0.16);
+}
+
+/* Couture Navbar Surface */
+.couture-navbar {
+  background: linear-gradient(
+    180deg,
+    rgba(250, 246, 240, 0.98) 0%,
+    rgba(244, 237, 226, 0.96) 100%
+  );
+  box-shadow:
+    0 10px 30px -10px rgba(58, 16, 66, 0.14),
+    0 2px 0 0 rgba(184, 134, 45, 0.45);
+}
+
+/* Unique Couture Announcement Bar */
+@keyframes announcementShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.couture-announcement-bar {
+  background: linear-gradient(
+    90deg,
+    #1A051E 0%,
+    #3A1042 25%,
+    #52165E 50%,
+    #3A1042 75%,
+    #1A051E 100%
+  );
+  background-size: 200% 200%;
+  animation: announcementShimmer 8s ease infinite;
+  box-shadow: inset 0 -1px 0 rgba(216, 181, 114, 0.45);
+}
+
+.announcement-pill-glow {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(184, 134, 45, 0.18) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.28),
+    inset 0 0 12px rgba(216, 181, 114, 0.22);
+}
+
+/* Unique Engraved Couture Font & Animated Feature Pills */
+.font-couture-unique {
+  font-family: 'Cinzel Decorative', 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.04em;
+}
+
+@keyframes featurePillWave {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.015);
+  }
+}
+
+@keyframes featureIconFloat {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(-6deg);
+  }
+}
+
+.feature-pill-animated {
+  animation: featurePillWave 3.6s ease-in-out infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-pill-animated:hover {
+  animation-play-state: paused;
+  transform: translateY(-6px) scale(1.03);
+}
+
+.feature-icon-animated {
+  animation: featureIconFloat 2.8s ease-in-out infinite;
+}
+
+/* Animated Pret Collection Showcase & Product Cards */
+@keyframes collectionHeaderShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes goldDividerExpand {
+  0%, 100% {
+    width: 5rem;
+    opacity: 0.7;
+  }
+  50% {
+    width: 11rem;
+    opacity: 1;
+  }
+}
+
+@keyframes productCardWave {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes saveBadgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(201, 42, 42, 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 4px 14px rgba(201, 42, 42, 0.6);
+  }
+}
+
+.collection-title-shimmer {
+  background: linear-gradient(
+    90deg,
+    #161F33 0%,
+    #3A1042 25%,
+    #8C2D56 50%,
+    #B8862D 75%,
+    #161F33 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: collectionHeaderShimmer 5s linear infinite;
+}
+
+.collection-gold-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #B8862D, #3A1042, #B8862D, transparent);
+  animation: goldDividerExpand 3.2s ease-in-out infinite;
+}
+
+.product-card-animated {
+  animation: productCardWave 4.2s ease-in-out infinite;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.product-card-animated:hover {
+  animation-play-state: paused;
+  transform: translateY(-10px) scale(1.015);
+}
+
+.save-badge-animated {
+  animation: saveBadgePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lookbookInfiniteLoop {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.lookbook-loop-track {
+  display: flex;
+  width: max-content;
+  animation: lookbookInfiniteLoop 28s linear infinite;
+  will-change: transform;
+}
+
+.lookbook-loop-track:hover {
+  animation-play-state: paused;
+}
+
+/* ==========================================================================
+   FULL-WEBSITE PAGE ENTER, FLOATING SECTIONS & MOBILE-FRIENDLY UTILITIES
+   ========================================================================== */
+
+@keyframes pageRevealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sectionGentleFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes whatsappBob {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 6px 16px rgba(37, 211, 102, 0.45));
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+    filter: drop-shadow(0 12px 24px rgba(37, 211, 102, 0.7));
+  }
+}
+
+.animate-page-enter {
+  animation: pageRevealUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-section-float {
+  animation: sectionGentleFloat 5.5s ease-in-out infinite;
+}
+
+.whatsapp-float-animated {
+  animation: whatsappBob 2.8s ease-in-out infinite;
+}
+
+/* Hide scrollbars on horizontal mobile swipe strips while keeping scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile-friendly touch & responsive tuning */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 640px) {
+  .product-card-animated:hover {
+    transform: translateY(-4px) scale(1.005);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #C9B79C;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A1042;
+}
+
+/* Print Invoice rules */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+}

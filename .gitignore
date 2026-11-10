@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment variables (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# SQLite runtime lock/wal files & local db
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.db
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
