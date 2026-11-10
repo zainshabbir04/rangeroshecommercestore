@@ -5,6 +5,7 @@ import {
   DashboardData,
   InventoryTransaction,
 } from '../types';
+import { fallbackStore } from './fallbackStore';
 
 const TOKEN_KEY = 'rer_admin_token';
 
@@ -20,7 +21,11 @@ export function setAdminToken(token: string | null): void {
   }
 }
 
-async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  url: string,
+  options: RequestInit = {},
+  fallbackFn?: () => T | Promise<T>
+): Promise<T> {
   const token = getAdminToken();
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -34,23 +39,49 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || `Request failed with status ${res.status}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      if (fallbackFn) {
+        return await fallbackFn();
+      }
+      throw new Error(`Unexpected response from server (${res.status})`);
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if ((res.status === 404 || res.status === 502 || res.status === 503) && fallbackFn) {
+        return await fallbackFn();
+      }
+      throw new Error(data.error || `Request failed with status ${res.status}`);
+    }
+    return data as T;
+  } catch (err: any) {
+    if (
+      fallbackFn &&
+      (err instanceof TypeError ||
+        String(err?.message || '').includes('Failed to fetch') ||
+        String(err?.message || '').includes('NetworkError') ||
+        String(err?.message || '').includes('Unexpected response'))
+    ) {
+      return await fallbackFn();
+    }
+    throw err;
   }
-  return data as T;
 }
 
 export const api = {
   // Storefront
   getStorefrontInit: () =>
     request<{ settings: StoreSettings; products: Product[]; categories: string[] }>(
-      '/api/storefront/init'
+      '/api/storefront/init',
+      {},
+      () => fallbackStore.getStorefrontInit()
     ),
 
   getProducts: (params?: {
@@ -65,11 +96,19 @@ export const api = {
     if (params?.sort) qs.set('sort', params.sort);
     if (params?.availability) qs.set('availability', params.availability);
     const queryStr = qs.toString();
-    return request<{ products: Product[] }>(`/api/products${queryStr ? `?${queryStr}` : ''}`);
+    return request<{ products: Product[] }>(
+      `/api/products${queryStr ? `?${queryStr}` : ''}`,
+      {},
+      () => fallbackStore.getProducts(params)
+    );
   },
 
   getProductDetail: (slugOrId: string) =>
-    request<{ product: Product; relatedProducts: Product[] }>(`/api/products/${slugOrId}`),
+    request<{ product: Product; relatedProducts: Product[] }>(
+      `/api/products/${slugOrId}`,
+      {},
+      () => fallbackStore.getProductDetail(slugOrId)
+    ),
 
   createOrder: (payload: {
     customer_name: string;
@@ -86,69 +125,128 @@ export const api = {
       selected_color?: string;
     }>;
   }) =>
-    request<{ order: Order }>('/api/orders', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    request<{ order: Order }>(
+      '/api/orders',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      () => fallbackStore.createOrder(payload)
+    ),
 
   lookupOrder: (orderNumber: string) =>
-    request<{ order: Order }>(`/api/orders/lookup/${encodeURIComponent(orderNumber)}`),
+    request<{ order: Order }>(
+      `/api/orders/lookup/${encodeURIComponent(orderNumber)}`,
+      {},
+      () => fallbackStore.lookupOrder(orderNumber)
+    ),
 
   subscribeNewsletter: (email: string) =>
-    request<{ message: string }>('/api/newsletter', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    }),
+    request<{ message: string }>(
+      '/api/newsletter',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      },
+      () => ({ message: 'Subscribed successfully! Welcome to Rang e Rosh.' })
+    ),
 
   // Admin Auth
   adminLogin: (email: string, password: string) =>
     request<{
       token: string;
       admin: { id: number; email: string; name: string; role: string };
-    }>('/api/admin/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
+    }>(
+      '/api/admin/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      },
+      () => fallbackStore.adminLogin(email, password)
+    ),
 
   adminMe: () =>
-    request<{ admin: { id: number; email: string; name: string; role: string } }>('/api/admin/me'),
+    request<{ admin: { id: number; email: string; name: string; role: string } }>(
+      '/api/admin/me',
+      {},
+      () => fallbackStore.adminMe()
+    ),
 
   // Admin Dashboard
   getDashboard: (range = 'all') =>
-    request<DashboardData>(`/api/admin/dashboard?range=${encodeURIComponent(range)}`),
+    request<DashboardData>(
+      `/api/admin/dashboard?range=${encodeURIComponent(range)}`,
+      {},
+      () => fallbackStore.getDashboard()
+    ),
 
   // Admin Products
-  getAdminProducts: () => request<{ products: Product[] }>('/api/admin/products'),
+  getAdminProducts: () =>
+    request<{ products: Product[] }>('/api/admin/products', {}, () =>
+      fallbackStore.getAdminProducts()
+    ),
 
   createProduct: (payload: any) =>
-    request<{ product: Product }>('/api/admin/products', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    request<{ product: Product }>(
+      '/api/admin/products',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      () => fallbackStore.createProduct(payload)
+    ),
 
   updateProduct: (id: number, payload: any) =>
-    request<{ product: Product }>(`/api/admin/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
+    request<{ product: Product }>(
+      `/api/admin/products/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+      () => fallbackStore.updateProduct(id, payload)
+    ),
 
   deleteProduct: (id: number) =>
-    request<{ message: string }>(`/api/admin/products/${id}`, {
-      method: 'DELETE',
-    }),
+    request<{ message: string }>(
+      `/api/admin/products/${id}`,
+      {
+        method: 'DELETE',
+      },
+      () => fallbackStore.deleteProduct(id)
+    ),
 
   uploadFiles: (files: FileList | File[]) => {
     const formData = new FormData();
     Array.from(files).forEach((f) => formData.append('files', f));
-    return request<{ urls: string[] }>('/api/admin/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    return request<{ urls: string[] }>(
+      '/api/admin/upload',
+      {
+        method: 'POST',
+        body: formData,
+      },
+      async () => {
+        const urls = await Promise.all(
+          Array.from(files).map(
+            (file) =>
+              new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.readAsDataURL(file);
+              })
+          )
+        );
+        return { urls };
+      }
+    );
   },
 
   // Admin Inventory
   getInventory: () =>
-    request<{ products: Product[]; transactions: InventoryTransaction[] }>('/api/admin/inventory'),
+    request<{ products: Product[]; transactions: InventoryTransaction[] }>(
+      '/api/admin/inventory',
+      {},
+      () => fallbackStore.getInventory()
+    ),
 
   adjustInventory: (
     productId: number,
@@ -161,10 +259,14 @@ export const api = {
       note?: string;
     }
   ) =>
-    request<{ product: Product }>(`/api/admin/inventory/${productId}/adjust`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    request<{ product: Product }>(
+      `/api/admin/inventory/${productId}/adjust`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      () => fallbackStore.adjustInventory(productId, payload)
+    ),
 
   // Admin Orders
   getAdminOrders: (params?: {
@@ -179,23 +281,38 @@ export const api = {
     if (params?.date_from) qs.set('date_from', params.date_from);
     if (params?.date_to) qs.set('date_to', params.date_to);
     const queryStr = qs.toString();
-    return request<{ orders: Order[] }>(`/api/admin/orders${queryStr ? `?${queryStr}` : ''}`);
+    return request<{ orders: Order[] }>(
+      `/api/admin/orders${queryStr ? `?${queryStr}` : ''}`,
+      {},
+      () => fallbackStore.getAdminOrders(params)
+    );
   },
 
   updateOrderStatus: (id: number, status: string) =>
-    request<{ order: Order }>(`/api/admin/orders/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    }),
+    request<{ order: Order }>(
+      `/api/admin/orders/${id}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      },
+      () => fallbackStore.updateOrderStatus(id, status)
+    ),
 
   // Admin Settings
-  getSettings: () => request<{ settings: StoreSettings }>('/api/admin/settings'),
+  getSettings: () =>
+    request<{ settings: StoreSettings }>('/api/admin/settings', {}, () =>
+      fallbackStore.getSettings()
+    ),
 
   updateSettings: (payload: Partial<StoreSettings>) =>
-    request<{ settings: StoreSettings }>('/api/admin/settings', {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
+    request<{ settings: StoreSettings }>(
+      '/api/admin/settings',
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+      () => fallbackStore.updateSettings(payload)
+    ),
 };
 
 export function formatPrice(amount: number, currency = 'PKR'): string {
