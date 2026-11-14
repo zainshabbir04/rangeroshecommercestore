@@ -82,7 +82,7 @@ export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { settings, setIsSizeChartOpen } = useStore();
+  const { settings, setIsSizeChartOpen, products: storeProducts } = useStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -109,20 +109,23 @@ export const ProductDetailPage: React.FC = () => {
     api
       .getProductDetail(slug)
       .then((res) => {
-        setProduct(res.product);
+        const syncedProd =
+          storeProducts.find((p) => p.id === res.product.id || p.slug === res.product.slug) ||
+          res.product;
+        setProduct(syncedProd);
         setRelatedProducts(res.relatedProducts);
         setActiveMediaIndex(0);
         setShowVideo(false);
-        const sizeStockMap = res.product.inventory.size_stock || {};
+        const sizeStockMap = syncedProd.inventory.size_stock || {};
         const firstAvailableSize =
           STANDARD_SIZES.find((s) => (sizeStockMap[s] ?? 1) > 0) ||
-          res.product.sizes[0] ||
+          syncedProd.sizes[0] ||
           'Small';
         setSelectedSize(firstAvailableSize);
-        setSelectedColor(res.product.colors[0] || res.product.color_name || '');
+        setSelectedColor(syncedProd.colors[0] || syncedProd.color_name || '');
         setQuantity(1);
         setFeedback(null);
-        document.title = `${res.product.name} — ${res.product.collection_name} | Rang e Rosh`;
+        document.title = `${syncedProd.name} — ${syncedProd.collection_name} | ${settings?.store_name || 'Rang e Rosh'}`;
       })
       .catch((err) => {
         setError(err.message || 'Product not found');
@@ -130,7 +133,7 @@ export const ProductDetailPage: React.FC = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [slug]);
+  }, [slug, storeProducts, settings?.store_name]);
 
   if (loading) {
     return (
@@ -181,9 +184,11 @@ export const ProductDetailPage: React.FC = () => {
   const maxStock = selectedSizeStock;
 
   const meta = PRODUCT_META_LOOKUP[product.slug];
+  const isDefaultName = product.name.trim().toLowerCase() === product.slug.trim().toLowerCase();
   const fullDescriptiveTitle =
-    meta?.fullTitle ||
-    `${product.name} ${product.color_name ? product.color_name.split(' ')[0] : ''} 2Pc - Stitched Embroidered Dress`;
+    meta && isDefaultName
+      ? meta.fullTitle
+      : `${product.name} ${product.color_name ? product.color_name.split(' ')[0] : ''} 2Pc - Stitched Embroidered Dress`;
   const ratingValue = meta?.rating || '4.8';
 
   const compareAtPrice =

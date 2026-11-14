@@ -37,12 +37,8 @@ export const AdminLoginPage: React.FC = () => {
       <div className="w-full max-w-md bg-[#FAF6F0] border-2 border-[#B8862D] rounded-xs shadow-2xl p-8 space-y-6">
         <div className="text-center space-y-2">
           <img
-            src={
-              !settings?.logo_url || settings.logo_url === '/assets/logo/website-logo.jpg'
-                ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
-                : settings.logo_url
-            }
-            alt="Rang e Rosh"
+            src={settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'}
+            alt={settings?.store_name || 'Rang e Rosh'}
             className="w-20 h-20 rounded-full object-contain bg-[#FAF6F0] p-1 mx-auto border-2 border-[#B8862D] shadow-md"
           />
           <h1 className="font-serif-editorial text-3xl font-bold text-[#161F33] pt-1">

@@ -72,12 +72,8 @@ export const AdminLayout: React.FC = () => {
           <div className="p-5 border-b border-white/10 flex items-center justify-between">
             <Link to="/admin" className="flex items-center gap-3">
               <img
-                src={
-                  !settings?.logo_url || settings.logo_url === '/assets/logo/website-logo.jpg'
-                    ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
-                    : settings.logo_url
-                }
-                alt="Rang e Rosh"
+                src={settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'}
+                alt={settings?.store_name || 'Rang e Rosh'}
                 className="w-11 h-11 rounded-full object-contain bg-[#FAF6F0] p-0.5 border border-[#B8862D]"
               />
               <div>

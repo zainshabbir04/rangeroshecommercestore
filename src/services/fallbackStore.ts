@@ -419,7 +419,7 @@ function getProducts(): Product[] {
 
 function getSettings(): StoreSettings {
   const s = loadFromStorage<StoreSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-  if (!s.logo_url || s.logo_url === '/assets/logo/website-logo.jpg') {
+  if (!s.logo_url) {
     s.logo_url = OFFICIAL_LOGO_URL;
   }
   return s;

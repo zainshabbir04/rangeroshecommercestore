@@ -22,6 +22,62 @@ function openMediaDb(): Promise<IDBDatabase> {
 }
 
 /**
+ * Compresses/converts an uploaded image file (Logo or Product Photo) into a lightweight
+ * Data URL (`data:image/...`) so it works directly in every `<img src={...} />` tag
+ * across Storefront and Admin and fits easily inside localStorage.
+ */
+export async function compressImageToDataUrl(file: File, maxDimension = 1200): Promise<string> {
+  return new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rawDataUrl = String(reader.result || '');
+      if (typeof document === 'undefined') {
+        resolve(rawDataUrl);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width >= height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(rawDataUrl);
+            return;
+          }
+          const isPng = file.type === 'image/png';
+          if (!isPng) {
+            ctx.fillStyle = '#FAF6F0';
+            ctx.fillRect(0, 0, width, height);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const outputMime = isPng ? 'image/png' : 'image/jpeg';
+          const compressed = canvas.toDataURL(outputMime, 0.85);
+          resolve(compressed.length < rawDataUrl.length ? compressed : rawDataUrl);
+        } catch {
+          resolve(rawDataUrl);
+        }
+      };
+      img.onerror = () => resolve(rawDataUrl);
+      img.src = rawDataUrl;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Stores any video or image File/Blob (of any length or file size) in IndexedDB
  * so it never exceeds localStorage's 5MB limit.
  */

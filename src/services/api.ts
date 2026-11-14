@@ -6,7 +6,13 @@ import {
   InventoryTransaction,
 } from '../types';
 import { fallbackStore } from './fallbackStore';
-import { saveFileToMediaStore } from './mediaStorage';
+import { compressImageToDataUrl, saveFileToMediaStore } from './mediaStorage';
+
+function emitStoreSync(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('rer-store-sync'));
+  }
+}
 
 const TOKEN_KEY = 'rer_admin_token';
 
@@ -187,34 +193,43 @@ export const api = {
       fallbackStore.getAdminProducts()
     ),
 
-  createProduct: (payload: any) =>
-    request<{ product: Product }>(
+  createProduct: async (payload: any) => {
+    const res = await request<{ product: Product }>(
       '/api/admin/products',
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
       () => fallbackStore.createProduct(payload)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 
-  updateProduct: (id: number, payload: any) =>
-    request<{ product: Product }>(
+  updateProduct: async (id: number, payload: any) => {
+    const res = await request<{ product: Product }>(
       `/api/admin/products/${id}`,
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
       () => fallbackStore.updateProduct(id, payload)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 
-  deleteProduct: (id: number) =>
-    request<{ message: string }>(
+  deleteProduct: async (id: number) => {
+    const res = await request<{ message: string }>(
       `/api/admin/products/${id}`,
       {
         method: 'DELETE',
       },
       () => fallbackStore.deleteProduct(id)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 
   uploadFiles: (files: FileList | File[]) => {
     const formData = new FormData();
@@ -231,14 +246,13 @@ export const api = {
             const isVideo =
               file.type.startsWith('video/') ||
               /\.(mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(file.name);
-            if (isVideo || file.size > 500 * 1024) {
+            if (isVideo) {
               return saveFileToMediaStore(file);
             }
-            return new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(String(reader.result || ''));
-              reader.readAsDataURL(file);
-            });
+            if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg|avif)$/i.test(file.name)) {
+              return compressImageToDataUrl(file);
+            }
+            return saveFileToMediaStore(file);
           })
         );
         return { urls };
@@ -254,7 +268,7 @@ export const api = {
       () => fallbackStore.getInventory()
     ),
 
-  adjustInventory: (
+  adjustInventory: async (
     productId: number,
     payload: {
       mode: 'set' | 'increase' | 'decrease';
@@ -264,15 +278,18 @@ export const api = {
       low_stock_threshold?: number;
       note?: string;
     }
-  ) =>
-    request<{ product: Product }>(
+  ) => {
+    const res = await request<{ product: Product }>(
       `/api/admin/inventory/${productId}/adjust`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
       () => fallbackStore.adjustInventory(productId, payload)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 
   // Admin Orders
   getAdminOrders: (params?: {
@@ -294,15 +311,18 @@ export const api = {
     );
   },
 
-  updateOrderStatus: (id: number, status: string) =>
-    request<{ order: Order }>(
+  updateOrderStatus: async (id: number, status: string) => {
+    const res = await request<{ order: Order }>(
       `/api/admin/orders/${id}/status`,
       {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       },
       () => fallbackStore.updateOrderStatus(id, status)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 
   // Admin Settings
   getSettings: () =>
@@ -310,15 +330,18 @@ export const api = {
       fallbackStore.getSettings()
     ),
 
-  updateSettings: (payload: Partial<StoreSettings>) =>
-    request<{ settings: StoreSettings }>(
+  updateSettings: async (payload: Partial<StoreSettings>) => {
+    const res = await request<{ settings: StoreSettings }>(
       '/api/admin/settings',
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
       () => fallbackStore.updateSettings(payload)
-    ),
+    );
+    emitStoreSync();
+    return res;
+  },
 };
 
 export function formatPrice(amount: number, currency = 'PKR'): string {

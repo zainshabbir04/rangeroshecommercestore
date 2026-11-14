@@ -71,9 +71,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
     product.inventory.available_stock <= product.inventory.low_stock_threshold;
 
   const meta = PRODUCT_DISPLAY_META[product.slug];
+  const isDefaultName = product.name.trim().toLowerCase() === product.slug.trim().toLowerCase();
   const displayTitle =
-    meta?.fullTitle ||
-    `${product.name} ${product.color_name ? product.color_name.split(' ')[0] : ''} 2Pc - Stitched Embroidered Dress`;
+    meta && isDefaultName
+      ? meta.fullTitle
+      : `${product.name} ${product.color_name ? product.color_name.split(' ')[0] : ''} 2Pc - Stitched Embroidered Dress`;
   const ratingValue = meta?.rating || '4.8';
 
   const compareAtPrice =

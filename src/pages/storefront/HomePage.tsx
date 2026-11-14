@@ -145,8 +145,11 @@ const FALLBACK_BANNER_PRODUCTS = [
 export const HomePage: React.FC = () => {
   const { settings, products, loading, setIsSizeChartOpen } = useStore();
 
-  const bannerProducts = products.length > 0 ? products.slice(0, 6) : (FALLBACK_BANNER_PRODUCTS as any[]);
-  const featuredProducts = products.filter((p) => p.is_featured).slice(0, 6);
+  const bannerProducts =
+    products.length > 0 ? products.slice(0, 6) : (FALLBACK_BANNER_PRODUCTS as any[]);
+  const featuredFiltered = products.filter((p) => p.is_featured);
+  const featuredProducts = featuredFiltered.length > 0 ? featuredFiltered : products;
+  const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
 
   return (
     <div className="space-y-12 sm:space-y-20 pb-14 sm:pb-20 animate-page-enter">
@@ -161,14 +164,20 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 text-center lg:text-left">
             <div className="space-y-3 max-w-2xl mx-auto lg:mx-0">
               <h1 className="wordmark-3d font-serif-editorial text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
-                Artisanal Embroidery &amp;{' '}
-                <span className="italic font-normal text-[#F7E3B5]">Stitched Elegance</span>
+                {settings?.hero_title &&
+                settings.hero_title !== 'Artisanal Embroidery & Timeless Stitched Elegance' ? (
+                  settings.hero_title
+                ) : (
+                  <>
+                    Artisanal Embroidery &amp;{' '}
+                    <span className="italic font-normal text-[#F7E3B5]">Stitched Elegance</span>
+                  </>
+                )}
               </h1>
 
               <p className="text-xs sm:text-sm text-[#FAF6F0]/85 leading-relaxed">
-                Explore our signature 2-piece ladies stitched ensembles—crafted with intricate
-                floral threadwork, antique gold tilla, schiffli cutwork, and fluid modern
-                silhouettes.
+                {settings?.hero_subtitle ||
+                  'Explore our signature 2-piece ladies stitched ensembles—crafted with intricate floral threadwork, antique gold tilla, schiffli cutwork, and fluid modern silhouettes.'}
               </p>
             </div>
 
@@ -367,13 +376,8 @@ export const HomePage: React.FC = () => {
                     <div className="logo-3d-ring" />
                     <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#D8B572] bg-[#FAF6F0] p-1 flex items-center justify-center">
                       <img
-                        src={
-                          !settings?.logo_url ||
-                          settings.logo_url === '/assets/logo/website-logo.jpg'
-                            ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
-                            : settings.logo_url
-                        }
-                        alt="Rang e Rosh Official Logo"
+                        src={logoUrl}
+                        alt={settings?.store_name || 'Rang e Rosh Official Logo'}
                         className="w-full h-full object-contain"
                       />
                       <div className="logo-3d-sheen" />
@@ -425,19 +429,31 @@ export const HomePage: React.FC = () => {
                 </span>
 
                 <h2 className="collection-title-shimmer font-serif-editorial text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-                  Where Heritage Threadwork Meets Modern Silhouette
+                  {settings?.promo_banner_title &&
+                  settings.promo_banner_title !== 'Crafted for Poise & Everyday Luxury'
+                    ? settings.promo_banner_title
+                    : 'Where Heritage Threadwork Meets Modern Silhouette'}
                 </h2>
 
                 <div className="collection-gold-line mx-auto lg:mx-0 rounded-full" />
               </div>
 
               <p className="text-sm sm:text-base text-[#161F33]/85 leading-relaxed">
-                <strong>Rang e Rosh</strong> is dedicated to the art of the 2-piece ladies stitched
-                suit. From the deep emerald tilla work of <em>SABZ</em> and the royal plum schiffli
-                cutwork of <em>ORCHID</em>, to the vibrant folk-inspired borders of <em>ZAYNA</em>{' '}
-                and timeless contrasts of <em>ANNA</em>, <em>HAZEL</em>, and <em>OLIVIA</em>—each
-                garment is engineered with high-density seam construction, structured necklines, and
-                fluid silhouettes designed for effortless grace.
+                {settings?.promo_banner_subtitle &&
+                !settings.promo_banner_subtitle.startsWith(
+                  'Every Rang e Rosh ensemble features high-density precision tailoring'
+                ) ? (
+                  settings.promo_banner_subtitle
+                ) : (
+                  <>
+                    <strong>Rang e Rosh</strong> is dedicated to the art of the 2-piece ladies
+                    stitched suit. From the deep emerald tilla work of <em>SABZ</em> and the royal
+                    plum schiffli cutwork of <em>ORCHID</em>, to the vibrant folk-inspired borders
+                    of <em>ZAYNA</em> and timeless contrasts of <em>ANNA</em>, <em>HAZEL</em>, and{' '}
+                    <em>OLIVIA</em>—each garment is engineered with high-density seam construction,
+                    structured necklines, and fluid silhouettes designed for effortless grace.
+                  </>
+                )}
               </p>
 
               {/* 3 Multi-Color Craftsmanship Cards on the Right Side */}

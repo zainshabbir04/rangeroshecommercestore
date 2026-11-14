@@ -155,13 +155,26 @@ export const StorefrontLayout: React.FC = () => {
     }
   };
 
-  const storeName = settings?.store_name || 'Rang e Rosh';
-  const rawLogo = settings?.logo_url;
-  const logoUrl =
-    !rawLogo || rawLogo === '/assets/logo/website-logo.jpg'
-      ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
-      : rawLogo;
+  const storeName = settings?.store_name?.trim() || 'Rang e Rosh';
+  const isDefaultStoreName = storeName.toLowerCase() === 'rang e rosh';
+  const storeTagline =
+    settings?.store_tagline?.trim() &&
+    settings.store_tagline.trim() !== 'Ladies Stitched Suits — Pret Collection'
+      ? settings.store_tagline.trim()
+      : 'Ladies Stitched Suits';
+  const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
   const whatsappClean = settings?.whatsapp_clean || '923200300552';
+
+  const announcementSlides = React.useMemo(() => {
+    const customText = settings?.announcement_text?.trim();
+    if (
+      customText &&
+      !customText.startsWith('Complimentary Nationwide Shipping on Orders Above PKR 15,000')
+    ) {
+      return [customText, ...ANNOUNCEMENT_SLIDES];
+    }
+    return ANNOUNCEMENT_SLIDES;
+  }, [settings?.announcement_text]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF6F0] text-[#161F33]">
@@ -176,8 +189,8 @@ export const StorefrontLayout: React.FC = () => {
 
           {/* Center Royal Pill Frame with One-by-One Vertical/Fade Slide */}
           <div className="announcement-pill-glow relative w-full max-w-2xl h-7 sm:h-8 rounded-full border border-[#D8B572]/45 overflow-hidden flex items-center justify-center px-2.5 sm:px-4">
-            {ANNOUNCEMENT_SLIDES.map((text, idx) => {
-              const isActive = idx === announcementIndex;
+            {announcementSlides.map((text, idx) => {
+              const isActive = idx === announcementIndex % announcementSlides.length;
               const isPrimaryWelcome = idx === 0;
               return (
                 <div
@@ -297,14 +310,20 @@ export const StorefrontLayout: React.FC = () => {
               {/* Complete 3D Embossed Wordmark (Never Truncated on Mobile) */}
               <div className="flex flex-col text-left">
                 <div className="font-serif-editorial text-[18px] sm:text-3xl lg:text-4xl font-bold tracking-[0.04em] sm:tracking-[0.09em] text-[#161F33] leading-none wordmark-3d transition-transform duration-500 group-hover:translate-x-0.5 whitespace-nowrap">
-                  RANG{' '}
-                  <span className="italic font-normal text-[#8C2D56] lowercase px-0.5">e</span>{' '}
-                  ROSH
+                  {isDefaultStoreName ? (
+                    <>
+                      RANG{' '}
+                      <span className="italic font-normal text-[#8C2D56] lowercase px-0.5">e</span>{' '}
+                      ROSH
+                    </>
+                  ) : (
+                    storeName.toUpperCase()
+                  )}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 mt-1">
                   <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
                   <span className="text-[7.5px] sm:text-[10px] tracking-[0.11em] sm:tracking-[0.28em] uppercase text-[#B8862D] font-bold whitespace-nowrap">
-                    Ladies Stitched Suits
+                    {storeTagline}
                   </span>
                   <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
                 </div>
@@ -396,10 +415,16 @@ export const StorefrontLayout: React.FC = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-serif-editorial text-2xl font-bold text-[#161F33] leading-none whitespace-nowrap">
-                      RANG <span className="italic text-[#8C2D56]">e</span> ROSH
+                      {isDefaultStoreName ? (
+                        <>
+                          RANG <span className="italic text-[#8C2D56]">e</span> ROSH
+                        </>
+                      ) : (
+                        storeName.toUpperCase()
+                      )}
                     </span>
                     <span className="text-[9px] tracking-[0.18em] uppercase text-[#B8862D] font-bold mt-1 whitespace-nowrap">
-                      Ladies Stitched Suits
+                      {storeTagline}
                     </span>
                   </div>
                 </div>

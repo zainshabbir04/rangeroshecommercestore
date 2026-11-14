@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Product, StoreSettings } from '../types';
 import { api } from '../services/api';
+import { resolveMediaUrl } from '../services/mediaStorage';
 
 interface StoreContextValue {
   settings: StoreSettings | null;
@@ -71,9 +72,55 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setError(null);
       const data = await api.getStorefrontInit();
-      setSettings(data.settings);
-      setProducts(data.products);
+
+      // Resolve any IndexedDB media references for logo or product images
+      const resolvedLogo = data.settings?.logo_url
+        ? await resolveMediaUrl(data.settings.logo_url)
+        : '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+
+      const resolvedSettings: StoreSettings = {
+        ...data.settings,
+        logo_url: resolvedLogo || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
+      };
+
+      const resolvedProducts = await Promise.all(
+        (data.products || []).map(async (prod) => {
+          const resolvedImages = await Promise.all(
+            (prod.images || []).map(async (img) => ({
+              ...img,
+              image_url: (await resolveMediaUrl(img.image_url)) || img.image_url,
+            }))
+          );
+          const primaryImg =
+            (await resolveMediaUrl(prod.primary_image)) ||
+            resolvedImages[0]?.image_url ||
+            prod.primary_image;
+          const secondaryImg =
+            (await resolveMediaUrl(prod.secondary_image)) ||
+            resolvedImages[1]?.image_url ||
+            primaryImg;
+          return {
+            ...prod,
+            primary_image: primaryImg,
+            secondary_image: secondaryImg,
+            images: resolvedImages,
+          };
+        })
+      );
+
+      setSettings(resolvedSettings);
+      setProducts(resolvedProducts);
       setCategories(data.categories);
+
+      // Dynamically sync browser favicon with store logo
+      if (typeof document !== 'undefined' && resolvedSettings.logo_url) {
+        const iconLinks = document.querySelectorAll<HTMLLinkElement>(
+          "link[rel='icon'], link[rel='apple-touch-icon']"
+        );
+        iconLinks.forEach((link) => {
+          link.href = resolvedSettings.logo_url;
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load storefront data');
     } finally {
@@ -83,6 +130,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     refreshStorefront();
+  }, [refreshStorefront]);
+
+  // Real-time sync across Admin Dashboard and Storefront (same tab & multi-tab)
+  useEffect(() => {
+    const handleSync = () => {
+      refreshStorefront();
+    };
+    window.addEventListener('rer-store-sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('rer-store-sync', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [refreshStorefront]);
 
   return (

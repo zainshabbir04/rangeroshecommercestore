@@ -25,16 +25,41 @@ export const AdminSettingsPage: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploadingLogo(true);
+    setFeedback(null);
     try {
       const res = await api.uploadFiles(files);
-      if (res.urls[0]) {
-        setForm((prev) => ({ ...prev, logo_url: res.urls[0] }));
+      const uploadedLogoUrl = res.urls?.[0];
+      if (uploadedLogoUrl) {
+        const updatedForm = { ...form, logo_url: uploadedLogoUrl };
+        setForm(updatedForm);
+        await api.updateSettings(updatedForm);
+        await refreshStorefront();
+        setFeedback({
+          type: 'success',
+          text: 'New logo uploaded and immediately applied to the Storefront & Admin Dashboard!',
+        });
       }
     } catch (err: any) {
       setFeedback({ type: 'error', text: err.message || 'Logo upload failed' });
     } finally {
       setUploadingLogo(false);
       e.target.value = '';
+    }
+  };
+
+  const handleRestoreOriginalLogo = async () => {
+    const defaultLogo = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+    const updatedForm = { ...form, logo_url: defaultLogo };
+    setForm(updatedForm);
+    try {
+      await api.updateSettings(updatedForm);
+      await refreshStorefront();
+      setFeedback({
+        type: 'success',
+        text: 'Original Rang e Rosh logo restored across Storefront & Admin Dashboard!',
+      });
+    } catch (err: any) {
+      setFeedback({ type: 'error', text: err.message || 'Failed to restore logo' });
     }
   };
 
@@ -101,9 +126,9 @@ export const AdminSettingsPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-2">
             <img
-              src={form.logo_url || '/assets/logo/website-logo.jpg'}
+              src={form.logo_url || settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'}
               alt="Store Logo"
-              className="w-20 h-20 rounded-full object-cover border-2 border-[#B8862D]"
+              className="w-20 h-20 rounded-full object-contain bg-[#FAF6F0] p-1 border-2 border-[#B8862D]"
             />
             <div className="space-y-2">
               <label className="px-4 py-2 bg-[#3A1042] hover:bg-[#8C2D56] text-white rounded-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer">
@@ -113,7 +138,7 @@ export const AdminSettingsPage: React.FC = () => {
               </label>
               <button
                 type="button"
-                onClick={() => setForm({ ...form, logo_url: '/assets/logo/website-logo.jpg' })}
+                onClick={handleRestoreOriginalLogo}
                 className="ml-3 text-[#8C2D56] hover:underline font-medium cursor-pointer"
               >
                 Restore Original Rang e Rosh Logo
