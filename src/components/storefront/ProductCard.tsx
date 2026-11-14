@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Eye, Check, Play, AlertCircle, Star } from 'lucide-react';
+import { ShoppingBag, Eye, Check, AlertCircle, Star } from 'lucide-react';
 import { Product } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
@@ -166,17 +166,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
             </>
           )}
         </div>
-
-        {/* Video Reel Badge if product has an official video */}
-        {product.video_url && (
-          <div
-            title="Includes Studio Video Reel"
-            className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#3A1042]/85 text-[#FAF6F0] text-[10px] font-semibold tracking-wider uppercase backdrop-blur-xs border border-[#D8B572]/40"
-          >
-            <Play className="w-2.5 h-2.5 fill-current text-[#D8B572]" />
-            <span>Video</span>
-          </div>
-        )}
 
         {/* Hover Action Overlay */}
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-[#161F33]/80 via-[#161F33]/35 to-transparent opacity-100 sm:opacity-0 sm:translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 flex items-center gap-2">
