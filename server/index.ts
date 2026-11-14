@@ -33,7 +33,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'rang-e-rosh-super-secret-jwt-key-c
 const ROOT_DIR = process.cwd();
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = path.join(ROOT_DIR, 'public', 'uploads');
@@ -43,13 +44,13 @@ fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 app.use('/assets', express.static(path.join(ROOT_DIR, 'public', 'assets')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Configure multer for image uploads
+// Configure multer for image & video uploads (any video type & any video length)
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, UPLOADS_DIR);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
+    const ext = path.extname(file.originalname) || '.mp4';
     const safeBase = path
       .basename(file.originalname, ext)
       .replace(/[^a-zA-Z0-9_-]/g, '-')
@@ -61,9 +62,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 60 * 1024 * 1024 },
+  limits: { fileSize: Infinity },
   fileFilter: (_req, file, cb) => {
-    if (/\.(jpg|jpeg|png|webp|gif|mp4|webm|mov|m4v)$/i.test(file.originalname)) {
+    if (
+      file.mimetype.startsWith('video/') ||
+      file.mimetype.startsWith('image/') ||
+      /\.(jpg|jpeg|png|webp|gif|svg|avif|mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(
+        file.originalname
+      )
+    ) {
       cb(null, true);
     } else {
       cb(new Error('Only image and video files are allowed'));

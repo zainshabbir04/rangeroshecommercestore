@@ -27,6 +27,7 @@ import { api } from '../../services/api';
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../../components/storefront/ProductCard';
+import { UniversalVideoPlayer } from '../../components/common/UniversalVideoPlayer';
 
 const PRODUCT_META_LOOKUP: Record<
   string,
@@ -504,12 +505,11 @@ export const ProductDetailPage: React.FC = () => {
               {/* Main Portrait Image Frame (10 cols) */}
               <div className="order-1 sm:order-2 sm:col-span-10 relative aspect-[3/4] w-full bg-[#F4EDE2] rounded-2xl overflow-hidden border border-[#D8B572]/50 shadow-md">
                 {showVideo && product.video_url ? (
-                  <video
+                  <UniversalVideoPlayer
                     src={product.video_url}
                     controls
                     autoPlay
                     loop
-                    playsInline
                     className="w-full h-full object-cover"
                   />
                 ) : (

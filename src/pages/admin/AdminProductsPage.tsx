@@ -17,6 +17,7 @@ import {
 import { Product, STANDARD_SIZES } from '../../types';
 import { api, formatPrice } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
+import { UniversalVideoPlayer } from '../../components/common/UniversalVideoPlayer';
 
 interface ProductFormState {
   id?: number;
@@ -909,7 +910,7 @@ export const AdminProductsPage: React.FC = () => {
                       <span>{uploadingVideo ? 'Uploading Video...' : 'Upload Product Video'}</span>
                       <input
                         type="file"
-                        accept="video/mp4,video/webm,video/quicktime,video/*"
+                        accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v,.wmv,.flv,.3gp,.mpeg,.mpg,.ogv,.ts"
                         onChange={handleVideoUpload}
                         className="hidden"
                       />
@@ -922,26 +923,27 @@ export const AdminProductsPage: React.FC = () => {
                     type="text"
                     value={form.video_url}
                     onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                    placeholder="Upload a video file above or paste a video URL (/assets/products/anna/video.mp4)"
+                    placeholder="Upload any video file (any format or length) or paste a video / YouTube / Drive URL"
                     className="flex-1 p-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
                   />
                 </div>
 
                 {form.video_url && (
                   <div className="p-3 bg-[#FAF6F0] border border-[#D8B572]/60 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <video
-                      src={form.video_url}
-                      controls
-                      muted
-                      playsInline
-                      className="w-32 aspect-[3/4] rounded-lg object-cover bg-black border border-[#E5D9C5] shrink-0"
-                    />
+                    <div className="w-32 aspect-[3/4] rounded-lg overflow-hidden bg-black border border-[#E5D9C5] shrink-0">
+                      <UniversalVideoPlayer
+                        src={form.video_url}
+                        controls
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div className="space-y-1 flex-1 min-w-0">
                       <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#2E6F73]/15 text-[#2E6F73] text-[10px] font-bold uppercase tracking-wider">
-                        Video Attached
+                        Video Attached (Any Format &amp; Length Supported)
                       </span>
                       <p className="text-xs font-semibold text-[#161F33] truncate">
-                        {form.video_url.startsWith('data:')
+                        {form.video_url.startsWith('data:') || form.video_url.startsWith('idb://')
                           ? 'Uploaded Video File (Ready to Save)'
                           : form.video_url}
                       </p>

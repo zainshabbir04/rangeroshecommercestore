@@ -6,6 +6,7 @@ import {
   InventoryTransaction,
 } from '../types';
 import { fallbackStore } from './fallbackStore';
+import { saveFileToMediaStore } from './mediaStorage';
 
 const TOKEN_KEY = 'rer_admin_token';
 
@@ -226,14 +227,19 @@ export const api = {
       },
       async () => {
         const urls = await Promise.all(
-          Array.from(files).map(
-            (file) =>
-              new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(String(reader.result || ''));
-                reader.readAsDataURL(file);
-              })
-          )
+          Array.from(files).map(async (file) => {
+            const isVideo =
+              file.type.startsWith('video/') ||
+              /\.(mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(file.name);
+            if (isVideo || file.size > 500 * 1024) {
+              return saveFileToMediaStore(file);
+            }
+            return new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || ''));
+              reader.readAsDataURL(file);
+            });
+          })
         );
         return { urls };
       }
