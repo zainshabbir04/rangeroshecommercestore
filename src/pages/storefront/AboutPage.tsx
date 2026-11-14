@@ -50,13 +50,13 @@ export const AboutPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10 text-center space-y-6">
           {/* 3D Animated Emblem */}
           <div className="logo-3d-stage flex justify-center">
-            <div className="logo-3d-medallion relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-white flex items-center justify-center">
+            <div className="logo-3d-medallion relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-[#FAF6F0] flex items-center justify-center">
               <div className="logo-3d-ring" />
-              <div className="relative z-10 w-full h-full rounded-full overflow-hidden border border-[#D8B572]">
+              <div className="relative z-10 w-full h-full rounded-full overflow-hidden border border-[#D8B572] bg-[#FAF6F0] p-1 flex items-center justify-center">
                 <img
                   src={logoUrl}
                   alt="Rang e Rosh Logo"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 <div className="logo-3d-sheen" />
               </div>

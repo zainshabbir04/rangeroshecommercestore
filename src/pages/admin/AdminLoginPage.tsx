@@ -43,7 +43,7 @@ export const AdminLoginPage: React.FC = () => {
                 : settings.logo_url
             }
             alt="Rang e Rosh"
-            className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-[#B8862D] shadow-md"
+            className="w-20 h-20 rounded-full object-contain bg-[#FAF6F0] p-1 mx-auto border-2 border-[#B8862D] shadow-md"
           />
           <h1 className="font-serif-editorial text-3xl font-bold text-[#161F33] pt-1">
             RANG <span className="italic font-normal text-[#8C2D56]">e</span> ROSH

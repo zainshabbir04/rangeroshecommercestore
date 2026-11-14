@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -8,12 +8,8 @@ import {
   Truck,
   MessageCircle,
   Layers,
-  ChevronLeft,
-  ChevronRight,
-  ShoppingBag,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { useCart } from '../../context/CartContext';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { formatPrice } from '../../services/api';
 
@@ -147,231 +143,95 @@ const FALLBACK_BANNER_PRODUCTS = [
 ];
 
 export const HomePage: React.FC = () => {
-  const { settings, products, loading } = useStore();
-  const { addToCart } = useCart();
+  const { settings, products, loading, setIsSizeChartOpen } = useStore();
 
-  // Banner slider state — cycles through ALL products every 2 seconds (2000ms)
-  const bannerSlides = products.length > 0 ? products : (FALLBACK_BANNER_PRODUCTS as any[]);
-  const [activeSlide, setActiveSlide] = useState(0);
-
-  // Automatic 2-second (2000ms) slider interval
-  useEffect(() => {
-    if (bannerSlides.length <= 1) return;
-    const timer = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % bannerSlides.length);
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [bannerSlides.length]);
-
-  const currentSlideProduct = bannerSlides[activeSlide] || bannerSlides[0];
-  const slideImages =
-    currentSlideProduct?.images && currentSlideProduct.images.length >= 3
-      ? [
-          currentSlideProduct.images[0].image_url,
-          currentSlideProduct.images[1].image_url,
-          currentSlideProduct.images[2].image_url,
-        ]
-      : [
-          currentSlideProduct?.primary_image,
-          currentSlideProduct?.secondary_image || currentSlideProduct?.primary_image,
-          currentSlideProduct?.images?.[2]?.image_url || currentSlideProduct?.primary_image,
-        ];
-
+  const bannerProducts = products.length > 0 ? products.slice(0, 6) : (FALLBACK_BANNER_PRODUCTS as any[]);
   const featuredProducts = products.filter((p) => p.is_featured).slice(0, 6);
 
   return (
     <div className="space-y-12 sm:space-y-20 pb-14 sm:pb-20 animate-page-enter">
-      {/* 1. FULL-WIDTH HERO BANNER SLIDER (All 6 Products + 2-Second Auto-Slider) */}
+      {/* 1. LUXURY HERO BANNER IMAGES SHOWCASE (Static Editorial Banner — No Slider) */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#200626] via-[#3A1042] to-[#12192B] text-[#FAF6F0] border-b-2 border-[#B8862D]">
         {/* Ambient Decorative Glows */}
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#8C2D56]/30 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 right-10 w-96 h-96 rounded-full bg-[#B8862D]/25 blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-6 pb-6 lg:pt-12 lg:pb-10 relative z-10">
-          {/* Main Banner Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
-            {/* Left Column: Active Slide Product Details & Call to Action (5 cols) */}
-            <div className="lg:col-span-5 space-y-4 sm:space-y-5 text-center lg:text-left">
-              <div className="feature-pill-animated inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-[#D8B572]/50 text-[#D8B572] text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase">
-                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                <span>
-                  Slide {activeSlide + 1} of {bannerSlides.length} • {currentSlideProduct.category}
-                </span>
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 relative z-10 space-y-8">
+          {/* Top Editorial Banner Heading & CTAs */}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 text-center lg:text-left">
+            <div className="space-y-3 max-w-2xl mx-auto lg:mx-0">
+              <div className="feature-pill-animated inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-[#D8B572]/60 text-[#F7E3B5] text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase">
+                <Sparkles className="w-3.5 h-3.5 text-[#D8B572]" />
+                <span>Rang e Rosh • Signature Pret Collection 2026</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#D8B572]" />
               </div>
 
-              <div className="space-y-1.5">
-                <p className="text-[11px] sm:text-xs font-semibold tracking-[0.22em] uppercase text-[#D8B572]">
-                  {currentSlideProduct.collection_name}
-                </p>
-                <h1 className="wordmark-3d font-serif-editorial text-4xl sm:text-6xl lg:text-7xl font-bold leading-none tracking-wide text-white transition-all duration-500">
-                  {currentSlideProduct.name}
-                </h1>
-                <p className="text-xs sm:text-base font-medium text-[#D8B572]">
-                  {currentSlideProduct.color_name}
-                </p>
-              </div>
+              <h1 className="wordmark-3d font-serif-editorial text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+                Artisanal Embroidery &amp;{' '}
+                <span className="italic font-normal text-[#F7E3B5]">Stitched Elegance</span>
+              </h1>
 
-              <p className="text-xs sm:text-sm text-[#FAF6F0]/85 leading-relaxed line-clamp-3 max-w-lg mx-auto lg:mx-0">
-                {currentSlideProduct.overview}
+              <p className="text-xs sm:text-sm text-[#FAF6F0]/85 leading-relaxed">
+                Explore our signature 2-piece ladies stitched ensembles—crafted with intricate
+                floral threadwork, antique gold tilla, schiffli cutwork, and fluid modern
+                silhouettes.
               </p>
-
-              {/* Price & Fit Pill */}
-              <div className="inline-flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 pt-1">
-                <span className="px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-[#8B6217] via-[#B8862D] to-[#8B6217] text-white font-serif-editorial text-xl sm:text-3xl font-bold shadow-md">
-                  {formatPrice(currentSlideProduct.effective_price)}
-                </span>
-                <span className="px-3.5 py-1.5 sm:py-2 rounded-full bg-white/10 border border-white/20 text-[11px] sm:text-xs uppercase tracking-wider text-[#FAF6F0]">
-                  {currentSlideProduct.fit}
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3">
-                <Link
-                  to={`/product/${currentSlideProduct.slug}`}
-                  className="px-5 sm:px-7 py-3 sm:py-3.5 bg-white text-[#3A1042] hover:bg-[#D8B572] hover:text-[#161F33] text-[11px] sm:text-xs font-bold tracking-[0.14em] uppercase rounded-full shadow-lg transition-all flex items-center gap-2"
-                >
-                  <span>Shop {currentSlideProduct.name}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                {products.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => addToCart(currentSlideProduct, 1)}
-                    className="px-5 sm:px-6 py-3 sm:py-3.5 bg-[#8C2D56] hover:bg-[#a63667] text-white border border-[#D8B572]/40 text-[11px] sm:text-xs font-bold tracking-[0.14em] uppercase rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-md"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-[#D8B572]" />
-                    <span>Add to Bag</span>
-                  </button>
-                )}
-
-                <Link
-                  to="/shop"
-                  className="px-4 sm:px-5 py-3 sm:py-3.5 border border-[#D8B572]/60 text-[#FAF6F0] hover:bg-white/10 text-[11px] sm:text-xs font-semibold tracking-[0.14em] uppercase rounded-full transition-all"
-                >
-                  All 6 Suits
-                </Link>
-              </div>
             </div>
 
-            {/* Right Column: Triptych 3-Photo Banner Showcase for Current Product + Slider Arrows (7 cols) */}
-            <div className="lg:col-span-7 relative animate-section-float">
-              {/* Previous / Next Slider Controls (Mobile Safe Inside Bounds) */}
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length)
-                }
-                aria-label="Previous product slide"
-                className="absolute left-1.5 sm:-left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#3A1042]/95 border border-[#D8B572] text-white hover:bg-[#B8862D] flex items-center justify-center shadow-xl transition-all cursor-pointer"
+            <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 shrink-0">
+              <Link
+                to="/shop"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#B8862D] via-[#D8B572] to-[#B8862D] text-[#1E0624] text-xs font-extrabold tracking-[0.15em] uppercase shadow-lg hover:scale-105 transition-all flex items-center gap-2"
               >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
+                <span>Explore Pret Collection</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
 
               <button
                 type="button"
-                onClick={() => setActiveSlide((prev) => (prev + 1) % bannerSlides.length)}
-                aria-label="Next product slide"
-                className="absolute right-1.5 sm:-right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#3A1042]/95 border border-[#D8B572] text-white hover:bg-[#B8862D] flex items-center justify-center shadow-xl transition-all cursor-pointer"
+                onClick={() => setIsSizeChartOpen(true)}
+                className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] border border-[#D8B572]/60 text-xs font-bold tracking-[0.15em] uppercase transition-all cursor-pointer"
               >
-                <ChevronRight className="w-5 h-5" />
+                Size Chart (S, M, L, XL)
               </button>
-
-              {/* 3-Image Triptych Banner Frame */}
-              <div className="grid grid-cols-12 gap-2.5 sm:gap-4 items-center">
-                {/* Main Hero Portrait (6 cols) */}
-                <Link
-                  to={`/product/${currentSlideProduct.slug}`}
-                  className="col-span-7 sm:col-span-6 relative group aspect-[3/4] rounded-2xl overflow-hidden border-2 border-[#D8B572] shadow-2xl bg-[#161F33]"
-                >
-                  <img
-                    key={`${currentSlideProduct.slug}-main`}
-                    src={slideImages[0]}
-                    alt={`${currentSlideProduct.name} View 1`}
-                    className="w-full h-full object-cover object-top transition-all duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-[#3A1042]/90 border border-[#D8B572]/60 text-[#FAF6F0] text-[9px] sm:text-[10px] font-bold tracking-widest uppercase rounded-full">
-                    {currentSlideProduct.name} • {formatPrice(currentSlideProduct.effective_price)}
-                  </div>
-                </Link>
-
-                {/* Two Supporting Angles of the Active Product (6 cols) */}
-                <div className="col-span-5 sm:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
-                  <Link
-                    to={`/product/${currentSlideProduct.slug}`}
-                    className="relative group aspect-[3/4] rounded-2xl overflow-hidden border border-[#D8B572]/60 shadow-xl bg-[#161F33]"
-                  >
-                    <img
-                      key={`${currentSlideProduct.slug}-sub1`}
-                      src={slideImages[1]}
-                      alt={`${currentSlideProduct.name} View 2`}
-                      className="w-full h-full object-cover object-top transition-all duration-500 group-hover:scale-105"
-                    />
-                    <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/65 text-[#D8B572] text-[9px] sm:text-[10px] uppercase tracking-wider rounded-full">
-                      Angle 02
-                    </span>
-                  </Link>
-
-                  <Link
-                    to={`/product/${currentSlideProduct.slug}`}
-                    className="hidden sm:block relative group aspect-[3/4] rounded-2xl overflow-hidden border border-[#D8B572]/60 shadow-xl bg-[#161F33]"
-                  >
-                    <img
-                      key={`${currentSlideProduct.slug}-sub2`}
-                      src={slideImages[2]}
-                      alt={`${currentSlideProduct.name} View 3`}
-                      className="w-full h-full object-cover object-top transition-all duration-500 group-hover:scale-105"
-                    />
-                    <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/65 text-[#D8B572] text-[10px] uppercase tracking-wider rounded-full">
-                      Angle 03
-                    </span>
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* All 6 Products Thumbnail Slider Dock (Click any product to jump or let it auto-slide every 2s) */}
-          <div className="mt-6 sm:mt-8 pt-4 sm:pt-5 border-t border-white/15">
-            <div className="flex items-center justify-between mb-3 text-[10px] sm:text-[11px] uppercase tracking-[0.14em] sm:tracking-[0.18em] text-[#D8B572]">
-              <span className="truncate">All 6 Pret Ensembles (Auto-Sliding Every 2s)</span>
-              <span className="shrink-0 ml-2">
-                {activeSlide + 1} / {bannerSlides.length}
-              </span>
-            </div>
+          {/* Banner Images Grid (All 6 Signature Ensembles Displayed Together) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {bannerProducts.map((prod) => (
+              <Link
+                key={prod.slug}
+                to={`/product/${prod.slug}`}
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-[#D8B572]/70 hover:border-[#F7E3B5] bg-[#161F33] shadow-[0_14px_32px_-8px_rgba(0,0,0,0.5)] transition-all duration-500 hover:-translate-y-1.5"
+              >
+                <img
+                  src={prod.primary_image}
+                  alt={prod.name}
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-108"
+                />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-              {bannerSlides.map((prod, idx) => {
-                const isCurrent = idx === activeSlide;
-                return (
-                  <button
-                    key={prod.slug || idx}
-                    type="button"
-                    onClick={() => setActiveSlide(idx)}
-                    className={`group relative flex items-center gap-2 sm:gap-2.5 p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      isCurrent
-                        ? 'bg-[#B8862D]/25 border-[#D8B572] ring-1 ring-[#D8B572] scale-[1.02]'
-                        : 'bg-white/5 border-white/15 opacity-75 hover:opacity-100 hover:border-white/40'
-                    }`}
-                  >
-                    <img
-                      src={prod.primary_image}
-                      alt={prod.name}
-                      className="w-10 h-13 sm:w-11 sm:h-14 rounded-lg object-cover object-top shrink-0 border border-[#D8B572]/40"
-                    />
-                    <div className="min-w-0">
-                      <span className="block font-serif-editorial text-sm sm:text-base font-bold text-white truncate">
-                        {prod.name}
-                      </span>
-                      <span className="block text-[10px] font-semibold text-[#D8B572] truncate">
-                        {formatPrice(prod.effective_price)}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                {/* Gradient Vignette Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#16041A]/90 via-[#16041A]/20 to-transparent" />
+
+                {/* Top Price Badge */}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#3A1042]/90 border border-[#D8B572]/60 text-[#F7E3B5] text-[9px] sm:text-[10px] font-bold tracking-wider uppercase">
+                    2-Piece
+                  </span>
+                </div>
+
+                {/* Bottom Product Banner Title & Price */}
+                <div className="absolute bottom-0 inset-x-0 p-3 sm:p-3.5 text-left space-y-0.5">
+                  <h2 className="font-serif-editorial text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-[#F7E3B5] transition-colors">
+                    {prod.name}
+                  </h2>
+                  <p className="text-[11px] font-bold text-[#D8B572]">
+                    {formatPrice(prod.effective_price)}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -509,9 +369,9 @@ export const HomePage: React.FC = () => {
 
                 {/* Large 3D Animated Logo Medallion */}
                 <div className="logo-3d-stage py-2">
-                  <div className="logo-3d-medallion relative w-36 h-36 sm:w-40 sm:h-40 rounded-full p-1.5 bg-white flex items-center justify-center shadow-2xl">
+                  <div className="logo-3d-medallion relative w-36 h-36 sm:w-40 sm:h-40 rounded-full p-1.5 bg-[#FAF6F0] flex items-center justify-center shadow-2xl">
                     <div className="logo-3d-ring" />
-                    <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#D8B572]">
+                    <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#D8B572] bg-[#FAF6F0] p-1 flex items-center justify-center">
                       <img
                         src={
                           !settings?.logo_url ||
@@ -520,7 +380,7 @@ export const HomePage: React.FC = () => {
                             : settings.logo_url
                         }
                         alt="Rang e Rosh Official Logo"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                       <div className="logo-3d-sheen" />
                     </div>

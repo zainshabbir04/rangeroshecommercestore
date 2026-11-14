@@ -214,17 +214,17 @@ export const StorefrontLayout: React.FC = () => {
         {/* Top Filigree Gold Shimmer Line */}
         <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#B8862D] to-transparent opacity-75" />
 
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 sm:h-26 lg:h-28 gap-2 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20 sm:h-26 lg:h-28 gap-1.5 sm:gap-4">
             {/* Left: Mobile Menu Trigger + Unique 3-Button Couture Pill Dock (Desktop) */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(true)}
-                className="lg:hidden p-2 sm:p-2.5 rounded-full bg-[#3A1042]/10 text-[#3A1042] hover:bg-[#3A1042] hover:text-white transition-all cursor-pointer border border-[#B8862D]/40"
+                className="lg:hidden p-1.5 sm:p-2.5 rounded-full bg-[#3A1042]/10 text-[#3A1042] hover:bg-[#3A1042] hover:text-white transition-all cursor-pointer border border-[#B8862D]/40"
                 aria-label="Open navigation menu"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               {/* Desktop 3-Button Luxury Navigation Dock: "Home", "Pret Collection", "Size Chart" */}
@@ -272,54 +272,54 @@ export const StorefrontLayout: React.FC = () => {
               </nav>
             </div>
 
-            {/* Center: 3D Animated Royal Medallion Logo & Embossed Brand Crest */}
+            {/* Center: Complete 3D Royal Medallion Logo & Complete Brand Name (Mobile & Desktop) */}
             <Link
               to="/"
-              className="group flex items-center gap-2.5 sm:gap-4 logo-3d-stage py-1 focus:outline-none min-w-0"
+              className="group flex items-center justify-center gap-2 sm:gap-4 logo-3d-stage py-1 focus:outline-none shrink-0"
             >
-              {/* 3D Animated Circular Emblem */}
-              <div className="relative w-12 h-12 sm:w-18 sm:h-18 lg:w-20 lg:h-20 rounded-full logo-3d-medallion flex items-center justify-center shrink-0">
+              {/* 3D Animated Circular Emblem — object-contain shows 100% complete logo without cropping */}
+              <div className="relative w-11 h-11 sm:w-18 sm:h-18 lg:w-20 lg:h-20 rounded-full logo-3d-medallion flex items-center justify-center shrink-0">
                 {/* Spinning Conic Gold Halo Ring */}
                 <div className="logo-3d-ring" />
 
                 {/* Inner Medallion Image Frame */}
-                <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#FAF6F0] bg-[#FAF6F0]">
+                <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#FAF6F0] bg-[#FAF6F0] flex items-center justify-center p-0.5">
                   <img
                     src={logoUrl}
                     alt={storeName}
-                    className="w-full h-full object-cover object-center scale-110 transition-transform duration-700 group-hover:scale-120"
+                    className="w-full h-full object-contain object-center transition-transform duration-700 group-hover:scale-105"
                   />
                   {/* 3D Specular Light Sweep */}
                   <div className="logo-3d-sheen" />
                 </div>
               </div>
 
-              {/* 3D Embossed Wordmark */}
-              <div className="flex flex-col text-left min-w-0">
-                <div className="font-serif-editorial text-xl sm:text-3xl lg:text-4xl font-bold tracking-[0.06em] sm:tracking-[0.09em] text-[#161F33] leading-none wordmark-3d transition-transform duration-500 group-hover:translate-x-0.5 truncate">
+              {/* Complete 3D Embossed Wordmark (Never Truncated on Mobile) */}
+              <div className="flex flex-col text-left">
+                <div className="font-serif-editorial text-[18px] sm:text-3xl lg:text-4xl font-bold tracking-[0.04em] sm:tracking-[0.09em] text-[#161F33] leading-none wordmark-3d transition-transform duration-500 group-hover:translate-x-0.5 whitespace-nowrap">
                   RANG{' '}
                   <span className="italic font-normal text-[#8C2D56] lowercase px-0.5">e</span>{' '}
                   ROSH
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
-                  <span className="h-[1px] w-3 sm:w-6 bg-[#B8862D]" />
-                  <span className="text-[8px] sm:text-[10px] tracking-[0.16em] sm:tracking-[0.28em] uppercase text-[#B8862D] font-bold truncate">
+                <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                  <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
+                  <span className="text-[7.5px] sm:text-[10px] tracking-[0.11em] sm:tracking-[0.28em] uppercase text-[#B8862D] font-bold whitespace-nowrap">
                     Ladies Stitched Suits
                   </span>
-                  <span className="h-[1px] w-3 sm:w-6 bg-[#B8862D]" />
+                  <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
                 </div>
               </div>
             </Link>
 
             {/* Right: Luxury Search Trigger & Sculpted Shopping Bag Button */}
-            <div className="flex items-center gap-1.5 sm:gap-3.5 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-3.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setSearchOpen((prev) => !prev)}
-                className="flex items-center gap-2 p-2 sm:px-3.5 sm:py-2.5 rounded-full bg-white border border-[#B8862D]/50 text-[#161F33] hover:border-[#3A1042] hover:text-[#3A1042] shadow-2xs transition-all cursor-pointer"
+                className="flex items-center gap-2 p-1.5 sm:px-3.5 sm:py-2.5 rounded-full bg-white border border-[#B8862D]/50 text-[#161F33] hover:border-[#3A1042] hover:text-[#3A1042] shadow-2xs transition-all cursor-pointer"
                 aria-label="Search products"
               >
-                <Search className="w-4 h-4 text-[#B8862D]" />
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8862D]" />
                 <span className="hidden xl:inline text-[11px] font-semibold tracking-[0.14em] uppercase text-[#161F33]/75">
                   Search Suits
                 </span>
@@ -328,14 +328,14 @@ export const StorefrontLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
-                className="relative px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-[#3A1042] via-[#4D1657] to-[#280A2E] text-[#FAF6F0] hover:from-[#8C2D56] hover:to-[#3A1042] border border-[#D8B572]/60 shadow-[0_6px_18px_rgba(58,16,66,0.28)] transition-all flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group"
+                className="relative px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full bg-gradient-to-r from-[#3A1042] via-[#4D1657] to-[#280A2E] text-[#FAF6F0] hover:from-[#8C2D56] hover:to-[#3A1042] border border-[#D8B572]/60 shadow-[0_6px_18px_rgba(58,16,66,0.28)] transition-all flex items-center gap-1 sm:gap-2.5 cursor-pointer group"
                 aria-label="Shopping Bag"
               >
-                <ShoppingBag className="w-4 h-4 text-[#D8B572] transition-transform group-hover:scale-110" />
+                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D8B572] transition-transform group-hover:scale-110" />
                 <span className="hidden sm:inline text-[11px] font-bold tracking-[0.15em] uppercase">
                   Bag
                 </span>
-                <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full bg-[#B8862D] text-white shadow-xs">
+                <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[11px] font-bold rounded-full bg-[#B8862D] text-white shadow-xs">
                   {totalItemsCount}
                 </span>
               </button>
@@ -387,16 +387,21 @@ export const StorefrontLayout: React.FC = () => {
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#E5D9C5]">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#B8862D] shadow-md">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#B8862D] bg-[#FAF6F0] p-0.5 shadow-md shrink-0">
                     <img
                       src={logoUrl}
                       alt={storeName}
-                      className="w-full h-full object-cover scale-110"
+                      className="w-full h-full object-contain"
                     />
                   </div>
-                  <span className="font-serif-editorial text-2xl font-bold text-[#161F33]">
-                    RANG <span className="italic text-[#8C2D56]">e</span> ROSH
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-serif-editorial text-2xl font-bold text-[#161F33] leading-none whitespace-nowrap">
+                      RANG <span className="italic text-[#8C2D56]">e</span> ROSH
+                    </span>
+                    <span className="text-[9px] tracking-[0.18em] uppercase text-[#B8862D] font-bold mt-1 whitespace-nowrap">
+                      Ladies Stitched Suits
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -500,12 +505,12 @@ export const StorefrontLayout: React.FC = () => {
             <div className="lg:col-span-4 space-y-5">
               <div className="flex items-center gap-4">
                 <div className="logo-3d-stage shrink-0">
-                  <div className="logo-3d-medallion relative w-16 h-16 rounded-full p-0.5 bg-white flex items-center justify-center">
+                  <div className="logo-3d-medallion relative w-16 h-16 rounded-full p-1 bg-[#FAF6F0] flex items-center justify-center">
                     <div className="logo-3d-ring" />
                     <img
                       src={logoUrl}
                       alt={storeName}
-                      className="relative z-10 w-full h-full rounded-full object-cover"
+                      className="relative z-10 w-full h-full rounded-full object-contain"
                     />
                   </div>
                 </div>

@@ -78,7 +78,7 @@ export const AdminLayout: React.FC = () => {
                     : settings.logo_url
                 }
                 alt="Rang e Rosh"
-                className="w-11 h-11 rounded-full object-cover border border-[#B8862D]"
+                className="w-11 h-11 rounded-full object-contain bg-[#FAF6F0] p-0.5 border border-[#B8862D]"
               />
               <div>
                 <span className="font-serif-editorial text-xl font-bold tracking-wider text-white block leading-none">

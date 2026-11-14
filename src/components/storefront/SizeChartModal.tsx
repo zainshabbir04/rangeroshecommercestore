@@ -74,12 +74,12 @@ export const SizeChartModal: React.FC = () => {
         <div className="shrink-0 px-5 py-4 sm:px-7 sm:py-5 bg-gradient-to-r from-[#200626] via-[#3A1042] to-[#1A051E] text-white flex flex-wrap items-center justify-between gap-4 border-b border-[#D8B572]/60">
           <div className="flex items-center gap-4">
             <div className="logo-3d-stage shrink-0">
-              <div className="logo-3d-medallion relative w-12 h-12 sm:w-14 sm:h-14 rounded-full p-0.5 bg-white flex items-center justify-center">
+              <div className="logo-3d-medallion relative w-12 h-12 sm:w-14 sm:h-14 rounded-full p-1 bg-[#FAF6F0] flex items-center justify-center">
                 <div className="logo-3d-ring" />
                 <img
                   src={logoUrl}
                   alt="Rang e Rosh"
-                  className="relative z-10 w-full h-full rounded-full object-cover"
+                  className="relative z-10 w-full h-full rounded-full object-contain"
                 />
               </div>
             </div>
