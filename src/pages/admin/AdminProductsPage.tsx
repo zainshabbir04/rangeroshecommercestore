@@ -12,6 +12,7 @@ import {
   EyeOff,
   AlertTriangle,
   Image as ImageIcon,
+  Video,
 } from 'lucide-react';
 import { Product, STANDARD_SIZES } from '../../types';
 import { api, formatPrice } from '../../services/api';
@@ -91,6 +92,7 @@ export const AdminProductsPage: React.FC = () => {
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -220,6 +222,27 @@ export const AdminProductsPage: React.FC = () => {
       setFormError(err.message || 'Image upload failed');
     } finally {
       setUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingVideo(true);
+    setFormError(null);
+    try {
+      const res = await api.uploadFiles(files);
+      if (res.urls && res.urls.length > 0) {
+        setForm((prev) => ({
+          ...prev,
+          video_url: res.urls[0],
+        }));
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'Video upload failed');
+    } finally {
+      setUploadingVideo(false);
       e.target.value = '';
     }
   };
@@ -857,6 +880,75 @@ export const AdminProductsPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Video (Studio Reel / Lookbook Video) Upload & Management */}
+              <div className="pt-4 border-t border-[#E5D9C5] space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="font-semibold uppercase tracking-wider text-[#161F33] flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-[#B8862D]" />
+                    <span>Product Video (Optional Studio Reel)</span>
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    {form.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, video_url: '' })}
+                        className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Video</span>
+                      </button>
+                    )}
+
+                    <label className="px-4 py-2 bg-[#3A1042] hover:bg-[#8C2D56] text-white rounded-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 cursor-pointer">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{uploadingVideo ? 'Uploading Video...' : 'Upload Product Video'}</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/*"
+                        onChange={handleVideoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={form.video_url}
+                    onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                    placeholder="Upload a video file above or paste a video URL (/assets/products/anna/video.mp4)"
+                    className="flex-1 p-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
+                  />
+                </div>
+
+                {form.video_url && (
+                  <div className="p-3 bg-[#FAF6F0] border border-[#D8B572]/60 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <video
+                      src={form.video_url}
+                      controls
+                      muted
+                      playsInline
+                      className="w-32 aspect-[3/4] rounded-lg object-cover bg-black border border-[#E5D9C5] shrink-0"
+                    />
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#2E6F73]/15 text-[#2E6F73] text-[10px] font-bold uppercase tracking-wider">
+                        Video Attached
+                      </span>
+                      <p className="text-xs font-semibold text-[#161F33] truncate">
+                        {form.video_url.startsWith('data:')
+                          ? 'Uploaded Video File (Ready to Save)'
+                          : form.video_url}
+                      </p>
+                      <p className="text-[11px] text-[#161F33]/65">
+                        This video will appear in the product detail card under the &ldquo;Video Reel&rdquo; tab and thumbnail strip.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
