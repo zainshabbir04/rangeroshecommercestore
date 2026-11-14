@@ -513,7 +513,12 @@ export const HomePage: React.FC = () => {
                     <div className="logo-3d-ring" />
                     <div className="relative z-10 w-full h-full rounded-full overflow-hidden border-2 border-[#D8B572]">
                       <img
-                        src={settings?.logo_url || '/assets/logo/website-logo.jpg'}
+                        src={
+                          !settings?.logo_url ||
+                          settings.logo_url === '/assets/logo/website-logo.jpg'
+                            ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+                            : settings.logo_url
+                        }
                         alt="Rang e Rosh Official Logo"
                         className="w-full h-full object-cover"
                       />

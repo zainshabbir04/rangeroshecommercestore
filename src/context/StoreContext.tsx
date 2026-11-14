@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   id: 1,
   store_name: 'Rang e Rosh',
   store_tagline: 'Ladies Stitched Suits — Pret Collection',
-  logo_url: '/assets/logo/website-logo.jpg',
+  logo_url: '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
   contact_email: 'rangerosh.official@gmail.com',
   contact_phone: '+923 130 888 048',
   whatsapp_number: '+923 200 300 552',

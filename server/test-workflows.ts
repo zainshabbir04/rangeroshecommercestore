@@ -56,7 +56,7 @@ async function runTests() {
         {
           product_id: prodRes.data.product.id,
           quantity: annaInitialStock + 5,
-          selected_size: 'Relaxed / Straight Fit',
+          selected_size: 'Small',
           selected_color: prodRes.data.product.color_name,
         },
       ],
@@ -80,8 +80,8 @@ async function runTests() {
       items: [
         {
           product_id: prodRes.data.product.id,
-          quantity: 2,
-          selected_size: 'Relaxed / Straight Fit',
+          quantity: 1,
+          selected_size: 'Small',
           selected_color: prodRes.data.product.color_name,
         },
       ],

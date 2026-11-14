@@ -156,7 +156,11 @@ export const StorefrontLayout: React.FC = () => {
   };
 
   const storeName = settings?.store_name || 'Rang e Rosh';
-  const logoUrl = settings?.logo_url || '/assets/logo/website-logo.jpg';
+  const rawLogo = settings?.logo_url;
+  const logoUrl =
+    !rawLogo || rawLogo === '/assets/logo/website-logo.jpg'
+      ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+      : rawLogo;
   const whatsappClean = settings?.whatsapp_clean || '923200300552';
 
   return (

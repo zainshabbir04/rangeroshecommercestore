@@ -273,12 +273,15 @@ export const INITIAL_PRODUCTS: InitialProductData[] = [
 export function syncOriginalAssetsToPublic(rootDir: string): Map<string, { images: string[]; videoUrl: string | null }> {
   const result = new Map<string, { images: string[]; videoUrl: string | null }>();
 
-  // 1. Copy Brand Logo
-  const srcLogoPath = path.join(rootDir, 'website logo', 'website logo.jpg');
+  // 1. Copy Brand Logo (Prefer the official uploaded Rang e Rosh Clothing logo if present)
+  const uploadedLogoPath = path.join(rootDir, 'public', 'uploads', '1794056903993-429854-rang-e-rosh-logo.jpg');
+  const srcLogoPath = fs.existsSync(uploadedLogoPath)
+    ? uploadedLogoPath
+    : path.join(rootDir, 'website logo', 'website logo.jpg');
   const destLogoDir = path.join(rootDir, 'public', 'assets', 'logo');
   fs.mkdirSync(destLogoDir, { recursive: true });
   const destLogoPath = path.join(destLogoDir, 'website-logo.jpg');
-  if (fs.existsSync(srcLogoPath) && !fs.existsSync(destLogoPath)) {
+  if (fs.existsSync(srcLogoPath)) {
     fs.copyFileSync(srcLogoPath, destLogoPath);
   }
 

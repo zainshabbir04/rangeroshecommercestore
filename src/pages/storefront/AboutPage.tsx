@@ -17,7 +17,10 @@ import { useStore } from '../../context/StoreContext';
 
 export const AboutPage: React.FC = () => {
   const { settings, setIsSizeChartOpen } = useStore();
-  const logoUrl = settings?.logo_url || '/assets/logo/website-logo.jpg';
+  const logoUrl =
+    !settings?.logo_url || settings.logo_url === '/assets/logo/website-logo.jpg'
+      ? '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+      : settings.logo_url;
   const whatsappClean = settings?.whatsapp_clean || '923200300552';
 
   const sliderImages = [

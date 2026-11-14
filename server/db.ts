@@ -103,7 +103,7 @@ export function initializeDatabase(): void {
     ).run(
       process.env.STORE_NAME || 'Rang e Rosh',
       process.env.STORE_TAGLINE || 'Ladies Stitched Suits — Pret Collection',
-      '/assets/logo/website-logo.jpg',
+      '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
       process.env.STORE_EMAIL || 'rangerosh.official@gmail.com',
       process.env.STORE_CONTACT_PHONE || '+923 130 888 048',
       process.env.STORE_SHIPPING_WHATSAPP || '+923 200 300 552',
@@ -122,6 +122,13 @@ export function initializeDatabase(): void {
       'https://www.facebook.com/RangeRosh/',
       JSON.stringify(['Cash on Delivery (COD)', 'Bank Transfer (Confirm via WhatsApp)'])
     );
+  } else {
+    // Ensure existing database uses the official Rang e Rosh Clothing logo if still set to old default
+    db.prepare(
+      `UPDATE store_settings
+       SET logo_url = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+       WHERE logo_url = '/assets/logo/website-logo.jpg' OR logo_url = ''`
+    ).run();
   }
 
   // 3. Seed the 6 Initial Products if products table is empty

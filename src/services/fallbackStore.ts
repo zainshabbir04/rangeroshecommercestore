@@ -9,17 +9,19 @@ import {
 } from '../types';
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'rer_fallback_products_v2',
-  SETTINGS: 'rer_fallback_settings_v2',
-  ORDERS: 'rer_fallback_orders_v2',
-  TRANSACTIONS: 'rer_fallback_transactions_v2',
+  PRODUCTS: 'rer_fallback_products_v3',
+  SETTINGS: 'rer_fallback_settings_v3',
+  ORDERS: 'rer_fallback_orders_v3',
+  TRANSACTIONS: 'rer_fallback_transactions_v3',
 };
+
+const OFFICIAL_LOGO_URL = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
 
 const DEFAULT_SETTINGS: StoreSettings = {
   id: 1,
   store_name: 'Rang e Rosh',
   store_tagline: 'Ladies Stitched Suits — Pret Collection',
-  logo_url: '/assets/logo/website-logo.jpg',
+  logo_url: OFFICIAL_LOGO_URL,
   contact_email: 'rangerosh.official@gmail.com',
   contact_phone: '+923 130 888 048',
   whatsapp_number: '+923 200 300 552',
@@ -416,7 +418,11 @@ function getProducts(): Product[] {
 }
 
 function getSettings(): StoreSettings {
-  return loadFromStorage<StoreSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+  const s = loadFromStorage<StoreSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+  if (!s.logo_url || s.logo_url === '/assets/logo/website-logo.jpg') {
+    s.logo_url = OFFICIAL_LOGO_URL;
+  }
+  return s;
 }
 
 function getOrders(): Order[] {
