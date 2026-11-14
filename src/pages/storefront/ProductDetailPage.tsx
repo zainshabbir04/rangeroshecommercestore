@@ -316,7 +316,7 @@ export const ProductDetailPage: React.FC = () => {
                     : 'bg-[#2E6F73] text-white border-[#8CE0E5]/50'
                 }`}
               >
-                {isOutOfStock ? 'Sold Out' : `In Stock (${maxStock} Left)`}
+                {isOutOfStock ? 'Sold Out' : 'In Stock'}
               </span>
             </div>
 
@@ -654,7 +654,7 @@ export const ProductDetailPage: React.FC = () => {
                               : 'text-[#2E6F73]'
                         }`}
                       >
-                        {isSizeSoldOut ? 'Sold Out' : `${stockForThisSize} in stock`}
+                        {isSizeSoldOut ? 'Sold Out' : 'In Stock'}
                       </span>
                     </button>
                   );

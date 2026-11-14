@@ -119,22 +119,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (currentQtyForSize + quantity > maxForSize) {
       return {
         success: false,
-        message:
-          currentQtyForSize > 0
-            ? `Only ${maxForSize} unit(s) of "${product.name}" (${sizeVal}) available (${currentQtyForSize} already in bag).`
-            : `Only ${maxForSize} unit(s) of "${product.name}" available in size ${sizeVal}.`,
+        message: `Maximum available stock for "${product.name}" (${sizeVal}) reached.`,
       };
     }
 
     const currentTotalForProduct = getProductQuantityInCart(product.id);
     if (currentTotalForProduct + quantity > availStock) {
-      const remaining = Math.max(0, availStock - currentTotalForProduct);
       return {
         success: false,
-        message:
-          remaining > 0
-            ? `Only ${availStock} unit(s) of "${product.name}" available (${currentTotalForProduct} already in cart).`
-            : `You already have the maximum available stock (${availStock}) of "${product.name}" in your cart.`,
+        message: `Maximum available stock for "${product.name}" reached.`,
       };
     }
 
@@ -204,7 +197,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (otherVariantsQty + newQuantity > target.max_available) {
       return {
         success: false,
-        message: `Only ${target.max_available} unit(s) of "${target.name}" are available in stock.`,
+        message: `Maximum available stock for "${target.name}" (${target.selected_size}) reached.`,
       };
     }
 

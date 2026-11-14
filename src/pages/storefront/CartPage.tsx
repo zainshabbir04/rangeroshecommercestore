@@ -163,8 +163,8 @@ export const CartPage: React.FC = () => {
                         <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span className="text-[11px] text-[#161F33]/60">
-                      ({item.max_available} available in stock)
+                    <span className="text-[11px] font-medium text-[#2E6F73]">
+                      In Stock
                     </span>
                   </div>
 

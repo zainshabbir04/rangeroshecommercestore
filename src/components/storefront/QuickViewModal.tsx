@@ -146,13 +146,10 @@ export const QuickViewModal: React.FC = () => {
                 className={`ml-auto px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded-xs ${
                   isOutOfStock
                     ? 'bg-red-100 text-red-800'
-                    : quickViewProduct.inventory.stock_status === 'Low Stock'
-                      ? 'bg-[#B8862D]/20 text-[#B8862D]'
-                      : 'bg-[#2E6F73]/15 text-[#2E6F73]'
+                    : 'bg-[#2E6F73]/15 text-[#2E6F73]'
                 }`}
               >
-                {quickViewProduct.inventory.stock_status}
-                {!isOutOfStock && ` (${maxStock} Available)`}
+                {isOutOfStock ? 'Out of Stock' : 'In Stock'}
               </span>
             </div>
 
@@ -223,7 +220,7 @@ export const QuickViewModal: React.FC = () => {
                                 : 'text-[#2E6F73]'
                           }`}
                         >
-                          {soldOut ? 'Sold Out' : `${st} left`}
+                          {soldOut ? 'Sold Out' : 'In Stock'}
                         </span>
                       </button>
                     );

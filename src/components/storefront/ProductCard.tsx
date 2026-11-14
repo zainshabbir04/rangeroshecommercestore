@@ -156,15 +156,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
               Sold Out
             </span>
           ) : (
-            <span className="save-badge-animated px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-[#C92A2A] text-white rounded-xs">
-              SAVE {savePercent}%
-            </span>
-          )}
-
-          {isLowStock && !isOutOfStock && (
-            <span className="px-2 py-0.5 text-[9px] font-semibold tracking-wider uppercase bg-[#3A1042]/90 text-[#F7E3B5] rounded-xs">
-              Only {product.inventory.available_stock} Left
-            </span>
+            <>
+              <span className="save-badge-animated px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase bg-[#C92A2A] text-white rounded-xs">
+                SAVE {savePercent}%
+              </span>
+              <span className="px-2 py-0.5 text-[9px] font-semibold tracking-wider uppercase bg-[#2E6F73]/95 text-white rounded-xs shadow-xs w-fit">
+                In Stock
+              </span>
+            </>
           )}
         </div>
 
