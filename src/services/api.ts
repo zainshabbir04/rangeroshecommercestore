@@ -202,6 +202,11 @@ export const api = {
       },
       () => fallbackStore.createProduct(payload)
     );
+    try {
+      fallbackStore.createProduct(payload);
+    } catch {
+      // keep local fallback in sync
+    }
     emitStoreSync();
     return res;
   },
@@ -215,6 +220,11 @@ export const api = {
       },
       () => fallbackStore.updateProduct(id, payload)
     );
+    try {
+      fallbackStore.updateProduct(id, payload);
+    } catch {
+      // keep local fallback in sync
+    }
     emitStoreSync();
     return res;
   },
@@ -227,37 +237,68 @@ export const api = {
       },
       () => fallbackStore.deleteProduct(id)
     );
+    try {
+      fallbackStore.deleteProduct(id);
+    } catch {
+      // keep local fallback in sync
+    }
     emitStoreSync();
     return res;
   },
 
-  uploadFiles: (files: FileList | File[]) => {
-    const formData = new FormData();
-    Array.from(files).forEach((f) => formData.append('files', f));
-    return request<{ urls: string[] }>(
-      '/api/admin/upload',
-      {
-        method: 'POST',
-        body: formData,
-      },
-      async () => {
-        const urls = await Promise.all(
-          Array.from(files).map(async (file) => {
-            const isVideo =
-              file.type.startsWith('video/') ||
-              /\.(mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(file.name);
-            if (isVideo) {
-              return saveFileToMediaStore(file);
-            }
-            if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg|avif)$/i.test(file.name)) {
+  uploadFiles: async (files: FileList | File[]) => {
+    const fileList = Array.from(files);
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    if (isLocalhost) {
+      const formData = new FormData();
+      fileList.forEach((f) => formData.append('files', f));
+      return request<{ urls: string[] }>(
+        '/api/admin/upload',
+        {
+          method: 'POST',
+          body: formData,
+        },
+        async () => {
+          const urls = await Promise.all(
+            fileList.map(async (file) => {
+              const isVideo =
+                file.type.startsWith('video/') ||
+                /\.(mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(
+                  file.name
+                );
+              if (isVideo) return saveFileToMediaStore(file);
               return compressImageToDataUrl(file);
-            }
-            return saveFileToMediaStore(file);
-          })
-        );
-        return { urls };
-      }
+            })
+          );
+          return { urls };
+        }
+      );
+    }
+
+    // On cloud/Vercel deployment, convert images to portable Data URLs so they are stored
+    // directly inside the shared cloud API state and visible across all devices & browsers.
+    const urls = await Promise.all(
+      fileList.map(async (file) => {
+        const isVideo =
+          file.type.startsWith('video/') ||
+          /\.(mp4|webm|mov|m4v|avi|mkv|wmv|flv|3gp|ogg|ogv|mpeg|mpg|ts|m2ts)$/i.test(file.name);
+        if (isVideo) {
+          if (file.size <= 12 * 1024 * 1024) {
+            return new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || ''));
+              reader.readAsDataURL(file);
+            });
+          }
+          return saveFileToMediaStore(file);
+        }
+        return compressImageToDataUrl(file);
+      })
     );
+    return { urls };
   },
 
   // Admin Inventory
@@ -339,6 +380,11 @@ export const api = {
       },
       () => fallbackStore.updateSettings(payload)
     );
+    try {
+      fallbackStore.updateSettings(payload);
+    } catch {
+      // keep local fallback in sync
+    }
     emitStoreSync();
     return res;
   },
