@@ -160,12 +160,6 @@ export const HomePage: React.FC = () => {
           {/* Top Editorial Banner Heading & CTAs */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 text-center lg:text-left">
             <div className="space-y-3 max-w-2xl mx-auto lg:mx-0">
-              <div className="feature-pill-animated inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-[#D8B572]/60 text-[#F7E3B5] text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase">
-                <Sparkles className="w-3.5 h-3.5 text-[#D8B572]" />
-                <span>Rang e Rosh • Signature Pret Collection 2026</span>
-                <Sparkles className="w-3.5 h-3.5 text-[#D8B572]" />
-              </div>
-
               <h1 className="wordmark-3d font-serif-editorial text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
                 Artisanal Embroidery &amp;{' '}
                 <span className="italic font-normal text-[#F7E3B5]">Stitched Elegance</span>
