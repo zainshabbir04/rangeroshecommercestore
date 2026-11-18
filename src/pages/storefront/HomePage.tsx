@@ -295,8 +295,30 @@ export const HomePage: React.FC = () => {
 
                 {/* Brand Wordmark & Tagline Under Logo */}
                 <div className="space-y-1.5">
-                  <h3 className="font-serif-editorial text-2xl sm:text-3xl font-bold tracking-[0.16em] text-white">
-                    RANG <span className="italic font-normal text-[#F7E3B5]">e</span> ROSH
+                  <h3
+                    style={{ fontFamily: "'Cormorant Garamond', 'Times New Roman', Georgia, serif" }}
+                    className="flex items-baseline justify-center text-2xl sm:text-3xl font-bold tracking-[0.06em] text-white leading-none whitespace-nowrap select-none"
+                  >
+                    <span>RANG</span>
+                    <svg
+                      viewBox="0 0 92 100"
+                      className="w-[27px] h-[28px] sm:w-[31px] sm:h-[32px] -ml-[2px] mr-[3px] self-center translate-y-[1px] shrink-0 overflow-visible"
+                      aria-label="e"
+                    >
+                      <path
+                        d="M 0 57 C 14 61, 30 58, 49 46 C 63 37, 70 23, 64 14 C 58 6, 42 12, 33 30 C 24 48, 22 72, 29 85 C 35 95, 50 93, 64 81 C 75 71, 83 58, 90 45"
+                        fill="none"
+                        stroke="#C7386B"
+                        strokeWidth="5.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M 56 12 C 44 14, 33 28, 27 48 C 21 67, 23 84, 32 90 C 37 93, 44 92, 50 89 C 39 89, 33 78, 36 58 C 39 38, 48 20, 59 14 Z"
+                        fill="#C7386B"
+                      />
+                    </svg>
+                    <span>ROSH</span>
                   </h3>
                   <div className="flex items-center justify-center gap-2">
                     <span className="h-[1px] w-6 bg-[#D8B572]" />
