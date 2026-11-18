@@ -66,12 +66,12 @@ export const HomePage: React.FC = () => {
 
   const totalSlides = HERO_BANNER_SLIDES.length;
 
-  // Advance every 2 seconds in a continuous forward loop
+  // Advance every 3 seconds in a continuous forward loop
   useEffect(() => {
     const timer = window.setInterval(() => {
       setEnableTransition(true);
       setSlideIndex((prev) => prev + 1);
-    }, 2000);
+    }, 3000);
     return () => window.clearInterval(timer);
   }, []);
 
