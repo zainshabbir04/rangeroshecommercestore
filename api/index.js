@@ -370,22 +370,31 @@ const SEED_PRODUCTS = [
 let memoryState = null;
 
 function loadCloudState() {
-  if (memoryState) return memoryState;
-  try {
-    if (fs.existsSync(CLOUD_STATE_FILE)) {
-      const raw = fs.readFileSync(CLOUD_STATE_FILE, 'utf8');
-      memoryState = JSON.parse(raw);
-      return memoryState;
+  if (!memoryState) {
+    try {
+      if (fs.existsSync(CLOUD_STATE_FILE)) {
+        const raw = fs.readFileSync(CLOUD_STATE_FILE, 'utf8');
+        memoryState = JSON.parse(raw);
+      }
+    } catch {
+      // ignore read errors
     }
-  } catch {
-    // ignore read errors
   }
-  memoryState = {
-    settings: { ...DEFAULT_SETTINGS },
-    products: JSON.parse(JSON.stringify(SEED_PRODUCTS)),
-    orders: [],
-    transactions: [],
-  };
+  if (!memoryState) {
+    memoryState = {
+      settings: { ...DEFAULT_SETTINGS },
+      products: JSON.parse(JSON.stringify(SEED_PRODUCTS)),
+      orders: [],
+      transactions: [],
+    };
+  }
+  if (
+    !memoryState.settings?.logo_url ||
+    memoryState.settings.logo_url === '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg' ||
+    memoryState.settings.logo_url === '/assets/logo/website-logo.jpg'
+  ) {
+    memoryState.settings.logo_url = OFFICIAL_LOGO_URL;
+  }
   return memoryState;
 }
 

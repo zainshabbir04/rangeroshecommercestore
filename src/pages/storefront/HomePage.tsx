@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   ShieldCheck,
   Scissors,
@@ -59,28 +57,36 @@ const HERO_BANNER_SLIDES = [
   },
 ];
 
+const LOOPED_BANNER_SLIDES = [...HERO_BANNER_SLIDES, HERO_BANNER_SLIDES[0]];
+
 export const HomePage: React.FC = () => {
   const { settings, products, loading } = useStore();
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [enableTransition, setEnableTransition] = useState(true);
 
   const totalSlides = HERO_BANNER_SLIDES.length;
 
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  }, [totalSlides]);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-  }, [totalSlides]);
-
+  // Advance every 2 seconds in a continuous forward loop
   useEffect(() => {
-    if (isPaused) return;
     const timer = window.setInterval(() => {
-      nextSlide();
-    }, 3500);
+      setEnableTransition(true);
+      setSlideIndex((prev) => prev + 1);
+    }, 2000);
     return () => window.clearInterval(timer);
-  }, [isPaused, nextSlide]);
+  }, []);
+
+  // Seamless infinite loop reset when reaching the cloned first slide at the end
+  useEffect(() => {
+    if (slideIndex === totalSlides) {
+      const resetTimer = window.setTimeout(() => {
+        setEnableTransition(false);
+        setSlideIndex(0);
+      }, 650);
+      return () => window.clearTimeout(resetTimer);
+    }
+  }, [slideIndex, totalSlides]);
+
+  const activeDotIndex = slideIndex % totalSlides;
 
   const featuredFiltered = products.filter((p) => p.is_featured);
   const featuredProducts = featuredFiltered.length > 0 ? featuredFiltered : products;
@@ -88,21 +94,19 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-10 sm:space-y-16 pb-14 sm:pb-20 animate-page-enter">
-      {/* 1. HERO BANNER LOOPING SLIDER (All 6 Uploaded Promotional Banners in Continuous Loop) */}
-      <section
-        className="relative w-full overflow-hidden bg-[#16041A] border-b-2 border-[#B8862D] select-none"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      {/* 1. HERO BANNER INFINITE LOOPING SLIDER (2s Speed, No Arrow Icons) */}
+      <section className="relative w-full overflow-hidden bg-[#16041A] border-b-2 border-[#B8862D] select-none">
         <div className="relative w-full max-w-[1600px] mx-auto aspect-[16/9] max-h-[680px] overflow-hidden">
-          {/* Sliding Track */}
+          {/* Seamless Infinite Forward Sliding Track */}
           <div
-            className="flex w-full h-full transition-transform duration-700 ease-in-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            className={`flex w-full h-full ${
+              enableTransition ? 'transition-transform duration-600 ease-in-out' : ''
+            }`}
+            style={{ transform: `translateX(-${slideIndex * 100}%)` }}
           >
-            {HERO_BANNER_SLIDES.map((slide) => (
+            {LOOPED_BANNER_SLIDES.map((slide, idx) => (
               <Link
-                key={slide.id}
+                key={`${slide.id}-${idx}`}
                 to={`/product/${slide.slug}`}
                 className="w-full h-full shrink-0 relative block group focus:outline-none"
                 aria-label={`Shop ${slide.name}`}
@@ -110,48 +114,25 @@ export const HomePage: React.FC = () => {
                 <img
                   src={slide.image}
                   alt={slide.alt}
-                  className="w-full h-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.015]"
+                  className="w-full h-full object-cover object-center"
                 />
               </Link>
             ))}
           </div>
 
-          {/* Left / Previous Slide Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              prevSlide();
-            }}
-            aria-label="Previous banner slide"
-            className="absolute left-2.5 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#200626]/70 hover:bg-[#3A1042] text-[#FAF6F0] border border-[#D8B572]/70 flex items-center justify-center shadow-lg backdrop-blur-xs transition-all hover:scale-105 cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#F7E3B5]" />
-          </button>
-
-          {/* Right / Next Slide Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              nextSlide();
-            }}
-            aria-label="Next banner slide"
-            className="absolute right-2.5 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#200626]/70 hover:bg-[#3A1042] text-[#FAF6F0] border border-[#D8B572]/70 flex items-center justify-center shadow-lg backdrop-blur-xs transition-all hover:scale-105 cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#F7E3B5]" />
-          </button>
-
           {/* Bottom Loop Indicator Dots */}
           <div className="absolute bottom-2.5 sm:bottom-4 inset-x-0 z-20 flex items-center justify-center gap-1.5 sm:gap-2.5">
             <div className="px-3 py-1.5 rounded-full bg-[#16041A]/70 backdrop-blur-xs border border-[#D8B572]/50 flex items-center gap-1.5 sm:gap-2">
               {HERO_BANNER_SLIDES.map((slide, idx) => {
-                const isActive = idx === currentSlide;
+                const isActive = idx === activeDotIndex;
                 return (
                   <button
                     key={slide.id}
                     type="button"
-                    onClick={() => setCurrentSlide(idx)}
+                    onClick={() => {
+                      setEnableTransition(true);
+                      setSlideIndex(idx);
+                    }}
                     aria-label={`Go to banner ${idx + 1}: ${slide.name}`}
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
                       isActive
