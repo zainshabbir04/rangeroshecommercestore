@@ -307,26 +307,75 @@ export const StorefrontLayout: React.FC = () => {
                 </div>
               </div>
 
-              {/* Complete 3D Embossed Wordmark (Never Truncated on Mobile) */}
-              <div className="flex flex-col text-left">
-                <div className="font-serif-editorial text-[18px] sm:text-3xl lg:text-4xl font-bold tracking-[0.04em] sm:tracking-[0.09em] text-[#161F33] leading-none wordmark-3d transition-transform duration-500 group-hover:translate-x-0.5 whitespace-nowrap">
-                  {isDefaultStoreName ? (
-                    <>
-                      RANG{' '}
-                      <span className="italic font-normal text-[#8C2D56] lowercase px-0.5">e</span>{' '}
-                      ROSH
-                    </>
-                  ) : (
-                    storeName.toUpperCase()
-                  )}
-                </div>
-                <div className="flex items-center gap-1 sm:gap-2 mt-1">
-                  <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
-                  <span className="text-[7.5px] sm:text-[10px] tracking-[0.11em] sm:tracking-[0.28em] uppercase text-[#B8862D] font-bold whitespace-nowrap">
-                    {storeTagline}
-                  </span>
-                  <span className="h-[1px] w-2 sm:w-6 bg-[#B8862D] shrink-0" />
-                </div>
+              {/* Complete Logo-Matched Wordmark (Exact Typography & Layout from Official Logo) */}
+              <div className="flex flex-col items-center text-center">
+                {isDefaultStoreName ? (
+                  <>
+                    {/* Line 1: RANG —e ROSH (Matching Logo Roman Serif + Connected Burgundy Calligraphy 'e') */}
+                    <div
+                      style={{ fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif" }}
+                      className="flex items-baseline justify-center text-[17px] sm:text-[28px] lg:text-[34px] font-bold tracking-[0.06em] text-[#0E1834] leading-none whitespace-nowrap select-none"
+                    >
+                      <span>RANG</span>
+                      <span className="inline-flex items-center mx-0.5 sm:mx-1 text-[#8E244D]">
+                        <span className="inline-block w-2.5 sm:w-4 h-[1.5px] sm:h-[2px] bg-[#8E244D] -mr-0.5 translate-y-[-1px] sm:translate-y-[-2px]" />
+                        <span
+                          style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+                          className="italic font-normal text-[23px] sm:text-[38px] lg:text-[46px] leading-none lowercase tracking-normal -my-1"
+                        >
+                          e
+                        </span>
+                      </span>
+                      <span className="ml-0.5 sm:ml-1">ROSH</span>
+                    </div>
+
+                    {/* Line 2: Ornate Gold Filigree Divider (Matching Logo Center Ornament) */}
+                    <div className="flex items-center justify-center gap-1 mt-0.5 sm:mt-1 text-[#B38327]">
+                      <span className="h-[1px] w-5 sm:w-10 bg-gradient-to-r from-transparent to-[#B38327]" />
+                      <svg
+                        viewBox="0 0 36 10"
+                        className="w-5 h-1.5 sm:w-7 sm:h-2 fill-current text-[#B38327] shrink-0"
+                        aria-hidden="true"
+                      >
+                        <path d="M18 1 L21 5 L18 9 L15 5 Z M11 5 C13 2, 15 2, 15 5 C15 8, 13 8, 11 5 Z M25 5 C23 2, 21 2, 21 5 C21 8, 23 8, 25 5 Z M6 5 L9 3.5 L9 6.5 Z M30 5 L27 3.5 L27 6.5 Z" />
+                      </svg>
+                      <span className="h-[1px] w-5 sm:w-10 bg-gradient-to-l from-transparent to-[#B38327]" />
+                    </div>
+
+                    {/* Line 3: — C L O T H I N G — (Gold Spaced Sub-Header from Logo) */}
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 mt-0.5">
+                      <span className="h-[1px] w-3 sm:w-7 bg-[#B38327]/80 shrink-0" />
+                      <span
+                        style={{ fontFamily: "'Cinzel', 'Cormorant Garamond', serif" }}
+                        className="text-[7px] sm:text-[9.5px] lg:text-[10.5px] tracking-[0.32em] sm:tracking-[0.42em] uppercase text-[#B38327] font-bold whitespace-nowrap"
+                      >
+                        CLOTHING
+                      </span>
+                      <span className="h-[1px] w-3 sm:w-7 bg-[#B38327]/80 shrink-0" />
+                    </div>
+
+                    {/* Line 4: LADIES STITCHED SUITS (Crisp Navy Subtitle from Logo) */}
+                    <div className="text-[6.5px] sm:text-[8.5px] tracking-[0.18em] sm:tracking-[0.26em] uppercase text-[#161F33] font-semibold mt-0.5 whitespace-nowrap">
+                      {storeTagline}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      style={{ fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif" }}
+                      className="text-[18px] sm:text-3xl lg:text-4xl font-bold tracking-[0.06em] text-[#0E1834] leading-none whitespace-nowrap"
+                    >
+                      {storeName.toUpperCase()}
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-1">
+                      <span className="h-[1px] w-3 sm:w-6 bg-[#B38327] shrink-0" />
+                      <span className="text-[7.5px] sm:text-[9.5px] tracking-[0.16em] sm:tracking-[0.26em] uppercase text-[#B38327] font-bold whitespace-nowrap">
+                        {storeTagline}
+                      </span>
+                      <span className="h-[1px] w-3 sm:w-6 bg-[#B38327] shrink-0" />
+                    </div>
+                  </>
+                )}
               </div>
             </Link>
 
@@ -413,17 +462,36 @@ export const StorefrontLayout: React.FC = () => {
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-serif-editorial text-2xl font-bold text-[#161F33] leading-none whitespace-nowrap">
+                  <div className="flex flex-col items-start">
+                    <span
+                      style={{ fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif" }}
+                      className="flex items-baseline text-xl font-bold text-[#0E1834] leading-none whitespace-nowrap"
+                    >
                       {isDefaultStoreName ? (
                         <>
-                          RANG <span className="italic text-[#8C2D56]">e</span> ROSH
+                          <span>RANG</span>
+                          <span className="inline-flex items-center mx-0.5 text-[#8E244D]">
+                            <span className="inline-block w-2.5 h-[1.5px] bg-[#8E244D] -mr-0.5 translate-y-[-1px]" />
+                            <span
+                              style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
+                              className="italic font-normal text-[26px] leading-none lowercase"
+                            >
+                              e
+                            </span>
+                          </span>
+                          <span className="ml-0.5">ROSH</span>
                         </>
                       ) : (
                         storeName.toUpperCase()
                       )}
                     </span>
-                    <span className="text-[9px] tracking-[0.18em] uppercase text-[#B8862D] font-bold mt-1 whitespace-nowrap">
+                    <span
+                      style={{ fontFamily: "'Cinzel', 'Cormorant Garamond', serif" }}
+                      className="text-[8px] tracking-[0.32em] uppercase text-[#B38327] font-bold mt-1 whitespace-nowrap"
+                    >
+                      — CLOTHING —
+                    </span>
+                    <span className="text-[7.5px] tracking-[0.16em] uppercase text-[#161F33] font-semibold mt-0.5 whitespace-nowrap">
                       {storeTagline}
                     </span>
                   </div>
