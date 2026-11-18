@@ -626,7 +626,7 @@ export const StorefrontLayout: React.FC = () => {
               {/* Social Links (Instagram, Facebook, YouTube, TikTok Icon) */}
               <div className="flex items-center gap-2.5 pt-1">
                 <a
-                  href={settings?.instagram_url || 'https://www.instagram.com/rangerosh.official/'}
+                  href="https://www.instagram.com/rangerosh/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Rang e Rosh on Instagram"
@@ -637,10 +637,7 @@ export const StorefrontLayout: React.FC = () => {
                 </a>
 
                 <a
-                  href={
-                    settings?.facebook_url ||
-                    'https://www.facebook.com/profile.php?id=61580899835962'
-                  }
+                  href="https://www.facebook.com/RangeRosh/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Rang e Rosh on Facebook"
@@ -651,7 +648,7 @@ export const StorefrontLayout: React.FC = () => {
                 </a>
 
                 <a
-                  href={settings?.youtube_url || 'https://www.youtube.com/@rangerosh'}
+                  href="https://www.youtube.com/@RangeRosh"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Rang e Rosh on YouTube"
@@ -662,7 +659,7 @@ export const StorefrontLayout: React.FC = () => {
                 </a>
 
                 <a
-                  href={settings?.tiktok_url || 'https://www.tiktok.com/@rangerosh.official'}
+                  href="https://www.tiktok.com/@rangerosh"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Rang e Rosh on TikTok"

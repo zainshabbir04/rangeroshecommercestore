@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v2.json');
+const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v3.json');
 const STANDARD_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
 const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
@@ -27,10 +27,10 @@ const DEFAULT_SETTINGS = {
   promo_banner_title: 'Artisanal Embroidery Meets Modern Silhouette',
   promo_banner_subtitle:
     'Every Rang e Rosh ensemble is crafted with high-density seam tailoring, structured necklines, and fluid trousers for everyday luxury.',
-  instagram_url: 'https://www.instagram.com/rangerosh.official/',
-  youtube_url: 'https://www.youtube.com/channel/UC25A1a11129r4V133c23BTw',
-  tiktok_url: 'https://www.tiktok.com/@rangerosh.official',
-  facebook_url: 'https://www.facebook.com/profile.php?id=61579336619426',
+  instagram_url: 'https://www.instagram.com/rangerosh/',
+  youtube_url: 'https://www.youtube.com/@RangeRosh',
+  tiktok_url: 'https://www.tiktok.com/@rangerosh',
+  facebook_url: 'https://www.facebook.com/RangeRosh/',
   payment_methods: ['Cash on Delivery (COD)', 'Bank Transfer (Confirm via WhatsApp)'],
   updated_at: new Date().toISOString(),
 };

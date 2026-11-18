@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   promo_banner_subtitle:
     'Every Rang e Rosh ensemble features high-density precision tailoring, reinforced embroidery facings, and breathable seasonal weaves.',
   instagram_url: 'https://www.instagram.com/rangerosh/',
-  youtube_url: 'https://www.youtube.com/@rangerosh',
+  youtube_url: 'https://www.youtube.com/@RangeRosh',
   tiktok_url: 'https://www.tiktok.com/@rangerosh',
   facebook_url: 'https://www.facebook.com/RangeRosh/',
   payment_methods: ['Cash on Delivery (COD)', 'Bank Transfer (Confirm via WhatsApp)'],

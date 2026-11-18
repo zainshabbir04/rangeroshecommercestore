@@ -9,10 +9,10 @@ import {
 } from '../types';
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'rer_fallback_products_v4',
-  SETTINGS: 'rer_fallback_settings_v4',
-  ORDERS: 'rer_fallback_orders_v4',
-  TRANSACTIONS: 'rer_fallback_transactions_v4',
+  PRODUCTS: 'rer_fallback_products_v5',
+  SETTINGS: 'rer_fallback_settings_v5',
+  ORDERS: 'rer_fallback_orders_v5',
+  TRANSACTIONS: 'rer_fallback_transactions_v5',
 };
 
 const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
@@ -39,10 +39,10 @@ const DEFAULT_SETTINGS: StoreSettings = {
   promo_banner_title: 'Artisanal Embroidery Meets Modern Silhouette',
   promo_banner_subtitle:
     'Every Rang e Rosh ensemble is crafted with high-density seam tailoring, structured necklines, and fluid trousers for everyday luxury.',
-  instagram_url: 'https://www.instagram.com/rangerosh.official/',
-  youtube_url: 'https://www.youtube.com/channel/UC25A1a11129r4V133c23BTw',
-  tiktok_url: 'https://www.tiktok.com/@rangerosh.official',
-  facebook_url: 'https://www.facebook.com/profile.php?id=61579336619426',
+  instagram_url: 'https://www.instagram.com/rangerosh/',
+  youtube_url: 'https://www.youtube.com/@RangeRosh',
+  tiktok_url: 'https://www.tiktok.com/@rangerosh',
+  facebook_url: 'https://www.facebook.com/RangeRosh/',
   payment_methods: ['Cash on Delivery (COD)', 'Bank Transfer (Confirm via WhatsApp)'],
   updated_at: new Date().toISOString(),
 };
