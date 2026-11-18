@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   ShieldCheck,
   Scissors,
@@ -11,230 +13,155 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../../components/storefront/ProductCard';
-import { formatPrice } from '../../services/api';
 
-const FALLBACK_BANNER_PRODUCTS = [
+const HERO_BANNER_SLIDES = [
   {
     id: 1,
     slug: 'anna',
     name: 'ANNA',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Classic Black with Ivory/Off-White Embroidery',
-    fabric: 'Rich Black Textured Fabric',
-    fit: 'Relaxed / Straight Fit',
-    effective_price: 7490,
-    regular_price: 7490,
-    overview:
-      'Intricate light-toned embroidery on rich black textured fabric paired with a plain-dyed relaxed trouser.',
-    primary_image: '/assets/products/anna/1.jpg',
-    secondary_image: '/assets/products/anna/2.jpg',
-    images: [
-      { id: 1, image_url: '/assets/products/anna/1.jpg', alt_text: 'ANNA 1', sort_order: 0, is_primary: 1 },
-      { id: 2, image_url: '/assets/products/anna/2.jpg', alt_text: 'ANNA 2', sort_order: 1, is_primary: 0 },
-      { id: 3, image_url: '/assets/products/anna/3.jpg', alt_text: 'ANNA 3', sort_order: 2, is_primary: 0 },
-    ],
+    image: '/assets/banners/banner-1-anna.jpg',
+    alt: 'Rang e Rosh — Elegance Reimagined (ANNA Black Embroidered 2-Piece Suit)',
   },
   {
     id: 2,
-    slug: 'hazel',
-    name: 'HAZEL',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Cranberry Red with Floral Embroidery',
-    fabric: 'Rich Seasonal Textured Fabric',
-    fit: 'Relaxed / Straight Fit',
-    effective_price: 7490,
-    regular_price: 7490,
-    overview:
-      'Timeless cranberry red ensemble featuring delicate floral threadwork and traditional motifs along the neckline and cuffs.',
-    primary_image: '/assets/products/hazel/1.jpg',
-    secondary_image: '/assets/products/hazel/2.jpg',
-    images: [
-      { id: 4, image_url: '/assets/products/hazel/1.jpg', alt_text: 'HAZEL 1', sort_order: 0, is_primary: 1 },
-      { id: 5, image_url: '/assets/products/hazel/2.jpg', alt_text: 'HAZEL 2', sort_order: 1, is_primary: 0 },
-      { id: 6, image_url: '/assets/products/hazel/3.jpg', alt_text: 'HAZEL 3', sort_order: 2, is_primary: 0 },
-    ],
+    slug: 'orchid',
+    name: 'ORCHID',
+    image: '/assets/banners/banner-2-orchid.jpg',
+    alt: 'Rang e Rosh — Timeless Elegance in Every Thread (ORCHID Royal Purple 2-Piece Suit)',
   },
   {
     id: 3,
-    slug: 'olivia',
-    name: 'OLIVIA',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Deep Olive Green with Multi-color Threadwork',
-    fabric: 'Premium Cotton / Linen Blend',
-    fit: 'Relaxed Straight Fit',
-    effective_price: 8999,
-    regular_price: 8999,
-    overview:
-      'Sophisticated deep olive green 2-piece suit adorned with magenta, teal, blue, and gold floral embroidery.',
-    primary_image: '/assets/products/olivia/1.jpg',
-    secondary_image: '/assets/products/olivia/2.jpg',
-    images: [
-      { id: 7, image_url: '/assets/products/olivia/1.jpg', alt_text: 'OLIVIA 1', sort_order: 0, is_primary: 1 },
-      { id: 8, image_url: '/assets/products/olivia/2.jpg', alt_text: 'OLIVIA 2', sort_order: 1, is_primary: 0 },
-      { id: 9, image_url: '/assets/products/olivia/3.jpg', alt_text: 'OLIVIA 3', sort_order: 2, is_primary: 0 },
-    ],
+    slug: 'hazel',
+    name: 'HAZEL',
+    image: '/assets/banners/banner-3-hazel.jpg',
+    alt: 'Rang e Rosh — Colours That Reflect Your Elegance (HAZEL Cranberry Red 2-Piece Suit)',
   },
   {
     id: 4,
-    slug: 'orchid',
-    name: 'ORCHID',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Deep Plum / Royal Purple with Schiffli Cutwork',
-    fabric: 'Premium Smooth Viscose / Cotton Blend',
-    fit: 'Relaxed Straight Silhouette',
-    effective_price: 11450,
-    regular_price: 11450,
-    overview:
-      'Regal royal plum 2-piece stitched suit accented with cascading floral vines and scalloped schiffli cutwork.',
-    primary_image: '/assets/products/orchid/1.webp',
-    secondary_image: '/assets/products/orchid/2.webp',
-    images: [
-      { id: 10, image_url: '/assets/products/orchid/1.webp', alt_text: 'ORCHID 1', sort_order: 0, is_primary: 1 },
-      { id: 11, image_url: '/assets/products/orchid/2.webp', alt_text: 'ORCHID 2', sort_order: 1, is_primary: 0 },
-      { id: 12, image_url: '/assets/products/orchid/3.webp', alt_text: 'ORCHID 3', sort_order: 2, is_primary: 0 },
-    ],
+    slug: 'zayna',
+    name: 'ZAYNA',
+    image: '/assets/banners/banner-4-zayna.jpg',
+    alt: 'Rang e Rosh — The Festive Collection (ZAYNA Mustard 2-Piece Suit)',
   },
   {
     id: 5,
     slug: 'sabz',
     name: 'SABZ',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Deep Emerald Green with Antique Gold Tilla',
-    fabric: 'Premium Smooth Viscose Silk / Cotton Blend',
-    fit: 'Relaxed Longline Straight Cut',
-    effective_price: 8450,
-    regular_price: 8450,
-    overview:
-      'Luxurious jewel-toned emerald green ensemble showcasing antique gold tilla and paisley threadwork.',
-    primary_image: '/assets/products/sabz/5.png',
-    secondary_image: '/assets/products/sabz/6.png',
-    images: [
-      { id: 13, image_url: '/assets/products/sabz/5.png', alt_text: 'SABZ 1', sort_order: 0, is_primary: 1 },
-      { id: 14, image_url: '/assets/products/sabz/6.png', alt_text: 'SABZ 2', sort_order: 1, is_primary: 0 },
-      { id: 15, image_url: '/assets/products/sabz/7.png', alt_text: 'SABZ 3', sort_order: 2, is_primary: 0 },
-    ],
+    image: '/assets/banners/banner-5-sabz.jpg',
+    alt: 'Rang e Rosh — Crafted with Grace, Worn with Elegance (SABZ Emerald Green 2-Piece Suit)',
   },
   {
     id: 6,
-    slug: 'zayna',
-    name: 'ZAYNA',
-    collection_name: 'Rang e Rosh Pret Collection',
-    category: '2-Piece Stitched Suit',
-    color_name: 'Mustard Yellow with Maroon & Cream Accents',
-    fabric: 'Premium Cotton / Viscose Blend',
-    fit: 'Straight Cut / Relaxed Fit',
-    effective_price: 4700,
-    regular_price: 4700,
-    overview:
-      'Vibrant mustard-yellow 2-piece suit featuring folk-inspired geometric-floral borders and split-cuff sleeves.',
-    primary_image: '/assets/products/zayna/1.webp',
-    secondary_image: '/assets/products/zayna/2.webp',
-    images: [
-      { id: 16, image_url: '/assets/products/zayna/1.webp', alt_text: 'ZAYNA 1', sort_order: 0, is_primary: 1 },
-      { id: 17, image_url: '/assets/products/zayna/2.webp', alt_text: 'ZAYNA 2', sort_order: 1, is_primary: 0 },
-      { id: 18, image_url: '/assets/products/zayna/3.webp', alt_text: 'ZAYNA 3', sort_order: 2, is_primary: 0 },
-    ],
+    slug: 'olivia',
+    name: 'OLIVIA',
+    image: '/assets/banners/banner-6-olivia.jpg',
+    alt: 'Rang e Rosh — Timeless Elegance, Grace in Every Thread (OLIVIA Olive Green 2-Piece Suit)',
   },
 ];
 
 export const HomePage: React.FC = () => {
-  const { settings, products, loading, setIsSizeChartOpen } = useStore();
+  const { settings, products, loading } = useStore();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const bannerProducts =
-    products.length > 0 ? products.slice(0, 6) : (FALLBACK_BANNER_PRODUCTS as any[]);
+  const totalSlides = HERO_BANNER_SLIDES.length;
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  }, [totalSlides]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  }, [totalSlides]);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = window.setInterval(() => {
+      nextSlide();
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, [isPaused, nextSlide]);
+
   const featuredFiltered = products.filter((p) => p.is_featured);
   const featuredProducts = featuredFiltered.length > 0 ? featuredFiltered : products;
   const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
 
   return (
-    <div className="space-y-12 sm:space-y-20 pb-14 sm:pb-20 animate-page-enter">
-      {/* 1. LUXURY HERO BANNER IMAGES SHOWCASE (Static Editorial Banner — No Slider) */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#200626] via-[#3A1042] to-[#12192B] text-[#FAF6F0] border-b-2 border-[#B8862D]">
-        {/* Ambient Decorative Glows */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#8C2D56]/30 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 right-10 w-96 h-96 rounded-full bg-[#B8862D]/25 blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 relative z-10 space-y-8">
-          {/* Top Editorial Banner Heading & CTAs */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 text-center lg:text-left">
-            <div className="space-y-3 max-w-2xl mx-auto lg:mx-0">
-              <h1 className="wordmark-3d font-serif-editorial text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
-                {settings?.hero_title &&
-                settings.hero_title !== 'Artisanal Embroidery & Timeless Stitched Elegance' ? (
-                  settings.hero_title
-                ) : (
-                  <>
-                    Artisanal Embroidery &amp;{' '}
-                    <span className="italic font-normal text-[#F7E3B5]">Stitched Elegance</span>
-                  </>
-                )}
-              </h1>
-
-              <p className="text-xs sm:text-sm text-[#FAF6F0]/85 leading-relaxed">
-                {settings?.hero_subtitle ||
-                  'Explore our signature 2-piece ladies stitched ensembles—crafted with intricate floral threadwork, antique gold tilla, schiffli cutwork, and fluid modern silhouettes.'}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 shrink-0">
+    <div className="space-y-10 sm:space-y-16 pb-14 sm:pb-20 animate-page-enter">
+      {/* 1. HERO BANNER LOOPING SLIDER (All 6 Uploaded Promotional Banners in Continuous Loop) */}
+      <section
+        className="relative w-full overflow-hidden bg-[#16041A] border-b-2 border-[#B8862D] select-none"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <div className="relative w-full max-w-[1600px] mx-auto aspect-[16/9] max-h-[680px] overflow-hidden">
+          {/* Sliding Track */}
+          <div
+            className="flex w-full h-full transition-transform duration-700 ease-in-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+            {HERO_BANNER_SLIDES.map((slide) => (
               <Link
-                to="/shop"
-                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#B8862D] via-[#D8B572] to-[#B8862D] text-[#1E0624] text-xs font-extrabold tracking-[0.15em] uppercase shadow-lg hover:scale-105 transition-all flex items-center gap-2"
-              >
-                <span>Explore Pret Collection</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => setIsSizeChartOpen(true)}
-                className="px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] border border-[#D8B572]/60 text-xs font-bold tracking-[0.15em] uppercase transition-all cursor-pointer"
-              >
-                Size Chart (S, M, L, XL)
-              </button>
-            </div>
-          </div>
-
-          {/* Banner Images Grid (All 6 Signature Ensembles Displayed Together) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {bannerProducts.map((prod) => (
-              <Link
-                key={prod.slug}
-                to={`/product/${prod.slug}`}
-                className="group relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-[#D8B572]/70 hover:border-[#F7E3B5] bg-[#161F33] shadow-[0_14px_32px_-8px_rgba(0,0,0,0.5)] transition-all duration-500 hover:-translate-y-1.5"
+                key={slide.id}
+                to={`/product/${slide.slug}`}
+                className="w-full h-full shrink-0 relative block group focus:outline-none"
+                aria-label={`Shop ${slide.name}`}
               >
                 <img
-                  src={prod.primary_image}
-                  alt={prod.name}
-                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-108"
+                  src={slide.image}
+                  alt={slide.alt}
+                  className="w-full h-full object-cover object-center transition-transform duration-1000 group-hover:scale-[1.015]"
                 />
-
-                {/* Gradient Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#16041A]/90 via-[#16041A]/20 to-transparent" />
-
-                {/* Top Price Badge */}
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#3A1042]/90 border border-[#D8B572]/60 text-[#F7E3B5] text-[9px] sm:text-[10px] font-bold tracking-wider uppercase">
-                    2-Piece
-                  </span>
-                </div>
-
-                {/* Bottom Product Banner Title & Price */}
-                <div className="absolute bottom-0 inset-x-0 p-3 sm:p-3.5 text-left space-y-0.5">
-                  <h2 className="font-serif-editorial text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-[#F7E3B5] transition-colors">
-                    {prod.name}
-                  </h2>
-                  <p className="text-[11px] font-bold text-[#D8B572]">
-                    {formatPrice(prod.effective_price)}
-                  </p>
-                </div>
               </Link>
             ))}
+          </div>
+
+          {/* Left / Previous Slide Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              prevSlide();
+            }}
+            aria-label="Previous banner slide"
+            className="absolute left-2.5 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#200626]/70 hover:bg-[#3A1042] text-[#FAF6F0] border border-[#D8B572]/70 flex items-center justify-center shadow-lg backdrop-blur-xs transition-all hover:scale-105 cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#F7E3B5]" />
+          </button>
+
+          {/* Right / Next Slide Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              nextSlide();
+            }}
+            aria-label="Next banner slide"
+            className="absolute right-2.5 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#200626]/70 hover:bg-[#3A1042] text-[#FAF6F0] border border-[#D8B572]/70 flex items-center justify-center shadow-lg backdrop-blur-xs transition-all hover:scale-105 cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#F7E3B5]" />
+          </button>
+
+          {/* Bottom Loop Indicator Dots */}
+          <div className="absolute bottom-2.5 sm:bottom-4 inset-x-0 z-20 flex items-center justify-center gap-1.5 sm:gap-2.5">
+            <div className="px-3 py-1.5 rounded-full bg-[#16041A]/70 backdrop-blur-xs border border-[#D8B572]/50 flex items-center gap-1.5 sm:gap-2">
+              {HERO_BANNER_SLIDES.map((slide, idx) => {
+                const isActive = idx === currentSlide;
+                return (
+                  <button
+                    key={slide.id}
+                    type="button"
+                    onClick={() => setCurrentSlide(idx)}
+                    aria-label={`Go to banner ${idx + 1}: ${slide.name}`}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      isActive
+                        ? 'w-6 sm:w-8 h-2 sm:h-2.5 bg-gradient-to-r from-[#D8B572] via-[#F7E3B5] to-[#B8862D] shadow-[0_0_8px_rgba(216,181,114,0.8)]'
+                        : 'w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white/45 hover:bg-white/80'
+                    }`}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
