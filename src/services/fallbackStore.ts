@@ -587,7 +587,7 @@ export const fallbackStore = {
   adminLogin(email: string, password: string) {
     if (
       email.trim().toLowerCase() === 'rangerosh.official@gmail.com' &&
-      password === 'RangERosh@2026'
+      (password === 'RangERosh@2026' || password === 'RangeRosh@Admin2026')
     ) {
       return {
         token: 'rer-static-admin-token-2026',

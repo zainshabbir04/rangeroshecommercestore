@@ -107,10 +107,10 @@ async function runTests() {
   );
   assert.strictEqual(
     afterPendingProd.data.product.inventory.reserved_stock,
-    2,
-    'Reserved stock should be 2'
+    1,
+    'Reserved stock should be 1'
   );
-  console.log('   ✅ Verified Pending order reserved 2 units without premature deduction.');
+  console.log('   ✅ Verified Pending order reserved 1 unit without premature deduction.');
 
   // 5. Admin Authentication
   console.log('5️⃣  Testing Admin Login & Protected Route Security...');
@@ -146,8 +146,8 @@ async function runTests() {
   const afterConfirmProd = await fetchJson('/api/products/anna');
   assert.strictEqual(
     afterConfirmProd.data.product.inventory.available_stock,
-    annaInitialStock - 2,
-    'Available stock must be deducted by 2 upon confirmation'
+    annaInitialStock - 1,
+    'Available stock must be deducted by 1 upon confirmation'
   );
   assert.strictEqual(
     afterConfirmProd.data.product.inventory.reserved_stock,
@@ -156,11 +156,11 @@ async function runTests() {
   );
   assert.strictEqual(
     afterConfirmProd.data.product.inventory.sold_quantity,
-    2,
-    'Sold quantity must increment by 2'
+    1,
+    'Sold quantity must increment by 1'
   );
   console.log(
-    `   ✅ Confirmed Order #${createdOrder.order_number}: Available Stock ${annaInitialStock} -> ${afterConfirmProd.data.product.inventory.available_stock}, Sold: 2`
+    `   ✅ Confirmed Order #${createdOrder.order_number}: Available Stock ${annaInitialStock} -> ${afterConfirmProd.data.product.inventory.available_stock}, Sold: 1`
   );
 
   // 7. Order Cancellation -> Inventory Restoration

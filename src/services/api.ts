@@ -194,53 +194,71 @@ export const api = {
     ),
 
   createProduct: async (payload: any) => {
+    let usedFallback = false;
     const res = await request<{ product: Product }>(
       '/api/admin/products',
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
-      () => fallbackStore.createProduct(payload)
+      () => {
+        usedFallback = true;
+        return fallbackStore.createProduct(payload);
+      }
     );
-    try {
-      fallbackStore.createProduct(payload);
-    } catch {
-      // keep local fallback in sync
+    if (!usedFallback) {
+      try {
+        fallbackStore.createProduct(payload);
+      } catch {
+        // keep local fallback in sync
+      }
     }
     emitStoreSync();
     return res;
   },
 
   updateProduct: async (id: number, payload: any) => {
+    let usedFallback = false;
     const res = await request<{ product: Product }>(
       `/api/admin/products/${id}`,
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
-      () => fallbackStore.updateProduct(id, payload)
+      () => {
+        usedFallback = true;
+        return fallbackStore.updateProduct(id, payload);
+      }
     );
-    try {
-      fallbackStore.updateProduct(id, payload);
-    } catch {
-      // keep local fallback in sync
+    if (!usedFallback) {
+      try {
+        fallbackStore.updateProduct(id, payload);
+      } catch {
+        // keep local fallback in sync
+      }
     }
     emitStoreSync();
     return res;
   },
 
   deleteProduct: async (id: number) => {
+    let usedFallback = false;
     const res = await request<{ message: string }>(
       `/api/admin/products/${id}`,
       {
         method: 'DELETE',
       },
-      () => fallbackStore.deleteProduct(id)
+      () => {
+        usedFallback = true;
+        return fallbackStore.deleteProduct(id);
+      }
     );
-    try {
-      fallbackStore.deleteProduct(id);
-    } catch {
-      // keep local fallback in sync
+    if (!usedFallback) {
+      try {
+        fallbackStore.deleteProduct(id);
+      } catch {
+        // keep local fallback in sync
+      }
     }
     emitStoreSync();
     return res;
@@ -372,18 +390,24 @@ export const api = {
     ),
 
   updateSettings: async (payload: Partial<StoreSettings>) => {
+    let usedFallback = false;
     const res = await request<{ settings: StoreSettings }>(
       '/api/admin/settings',
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
-      () => fallbackStore.updateSettings(payload)
+      () => {
+        usedFallback = true;
+        return fallbackStore.updateSettings(payload);
+      }
     );
-    try {
-      fallbackStore.updateSettings(payload);
-    } catch {
-      // keep local fallback in sync
+    if (!usedFallback) {
+      try {
+        fallbackStore.updateSettings(payload);
+      } catch {
+        // keep local fallback in sync
+      }
     }
     emitStoreSync();
     return res;
