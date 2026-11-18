@@ -133,13 +133,13 @@ export const ShopPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
         {/* ANIMATED PRET COLLECTION PRODUCT SHOWCASE */}
-        <div className="relative bg-gradient-to-b from-white via-[#FAF6F0]/90 to-white border border-[#D8B572]/60 rounded-2xl p-4 sm:p-8 shadow-[0_14px_40px_-14px_rgba(58,16,66,0.14)] overflow-hidden">
+        <div className="relative bg-gradient-to-b from-white via-[#FAF6F0]/90 to-white border border-[#D8B572]/60 rounded-2xl p-3 sm:p-8 shadow-[0_14px_40px_-14px_rgba(58,16,66,0.14)] overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#3A1042] via-[#B8862D] to-[#8C2D56]" />
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-7">
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <div
                   key={n}
@@ -165,7 +165,7 @@ export const ShopPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-7">
               {filteredProducts.map((product, idx) => (
                 <ProductCard key={product.id} product={product} index={idx} />
               ))}

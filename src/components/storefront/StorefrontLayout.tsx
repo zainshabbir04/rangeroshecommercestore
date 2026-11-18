@@ -415,6 +415,50 @@ export const StorefrontLayout: React.FC = () => {
               </form>
             </div>
           )}
+
+          {/* Mobile Quick Navigation Pill Dock (One-Tap Access on Mobile Screens) */}
+          <nav
+            aria-label="Mobile Quick Navigation"
+            className="lg:hidden flex items-center justify-center gap-1.5 pb-2.5 pt-0.5 overflow-x-auto no-scrollbar"
+          >
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-full text-[10px] font-bold tracking-[0.12em] uppercase transition-all duration-300 flex items-center gap-1 shrink-0 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#3A1042] to-[#561961] text-[#FAF6F0] shadow-xs border border-[#D8B572]/60'
+                    : 'bg-white/90 text-[#161F33] border border-[#E5D9C5]'
+                }`
+              }
+            >
+              <Home className="w-3 h-3 text-[#D8B572]" />
+              <span>Home</span>
+            </NavLink>
+
+            <NavLink
+              to="/shop"
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-full text-[10px] font-bold tracking-[0.12em] uppercase transition-all duration-300 flex items-center gap-1 shrink-0 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#3A1042] to-[#561961] text-[#FAF6F0] shadow-xs border border-[#D8B572]/60'
+                    : 'bg-white/90 text-[#161F33] border border-[#E5D9C5]'
+                }`
+              }
+            >
+              <Gem className="w-3 h-3 text-[#B8862D]" />
+              <span>Pret Collection</span>
+            </NavLink>
+
+            <button
+              type="button"
+              onClick={() => setIsSizeChartOpen(true)}
+              className="px-3 py-1.5 rounded-full text-[10px] font-bold tracking-[0.12em] uppercase transition-all duration-300 flex items-center gap-1 text-[#3A1042] bg-white/90 border border-[#B8862D]/50 shrink-0 cursor-pointer active:scale-95"
+            >
+              <Ruler className="w-3 h-3 text-[#B8862D]" />
+              <span>Size Chart</span>
+            </button>
+          </nav>
         </div>
       </header>
 
@@ -423,9 +467,9 @@ export const StorefrontLayout: React.FC = () => {
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
             onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-[#161F33]/65 backdrop-blur-xs"
+            className="fixed inset-0 bg-[#161F33]/65 backdrop-blur-xs animate-fadeIn"
           />
-          <div className="relative z-10 w-80 max-w-full bg-[#FAF6F0] h-full shadow-2xl flex flex-col justify-between p-6 border-r-2 border-[#B8862D]">
+          <div className="relative z-10 w-80 max-w-[85vw] bg-[#FAF6F0] h-full shadow-2xl flex flex-col justify-between p-5 sm:p-6 border-r-2 border-[#B8862D] animate-slide-in-left">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#E5D9C5]">
                 <div className="flex items-center gap-3">

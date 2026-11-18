@@ -757,7 +757,7 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* 4 Multi-Color Product Specification Cards on the Right Side */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {[
               {
                 label: 'Product Type',
@@ -787,12 +787,12 @@ export const ProductDetailPage: React.FC = () => {
               <div
                 key={spec.label}
                 style={{ animationDelay: spec.delay }}
-                className={`product-card-animated p-4 rounded-2xl border shadow-2xs ${spec.style}`}
+                className={`product-card-animated p-3 sm:p-4 rounded-2xl border shadow-2xs ${spec.style}`}
               >
                 <span className="block text-[9px] font-extrabold uppercase tracking-[0.16em] opacity-75">
                   {spec.label}
                 </span>
-                <p className="font-serif-editorial text-sm sm:text-base font-bold leading-snug mt-1">
+                <p className="font-serif-editorial text-xs sm:text-base font-bold leading-snug mt-1">
                   {spec.value}
                 </p>
               </div>
@@ -804,18 +804,18 @@ export const ProductDetailPage: React.FC = () => {
       {/* 3. RELATED PRODUCTS SECTION */}
       {relatedProducts.length > 0 && (
         <section className="pt-8 border-t border-[#E5D9C5]">
-          <div className="bg-white/90 border border-[#D8B572]/60 rounded-3xl p-6 sm:p-8 shadow-xs space-y-7">
-            <div className="text-center space-y-1.5">
+          <div className="bg-white/90 border border-[#D8B572]/60 rounded-3xl p-3 sm:p-8 shadow-xs space-y-6 sm:space-y-7">
+            <div className="text-center space-y-1.5 pt-2 sm:pt-0">
               <span className="text-xs font-bold tracking-[0.22em] uppercase text-[#8C2D56]">
                 Complete Your Wardrobe
               </span>
-              <h2 className="collection-title-shimmer font-serif-editorial text-3xl sm:text-5xl font-bold">
+              <h2 className="collection-title-shimmer font-serif-editorial text-2xl sm:text-5xl font-bold">
                 You May Also Admire
               </h2>
               <div className="collection-gold-line mx-auto rounded-full" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {relatedProducts.map((rel, idx) => (
                 <ProductCard key={rel.id} product={rel} index={idx} />
               ))}

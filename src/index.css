@@ -375,8 +375,62 @@
   }
 }
 
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes royalBtnSheen {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .animate-page-enter {
   animation: pageRevealUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fadeIn {
+  animation: fadeInScale 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-section-float {
@@ -385,6 +439,15 @@
 
 .whatsapp-float-animated {
   animation: whatsappBob 2.8s ease-in-out infinite;
+}
+
+.btn-royal-shimmer {
+  background-size: 200% 100%;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.btn-royal-shimmer:active {
+  transform: scale(0.97);
 }
 
 /* Hide scrollbars on horizontal mobile swipe strips while keeping scrollability */
@@ -402,7 +465,14 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+button, a {
+  touch-action: manipulation;
+}
+
 @media (max-width: 640px) {
+  .product-card-animated {
+    animation: productCardWave 4.5s ease-in-out infinite;
+  }
   .product-card-animated:hover {
     transform: translateY(-4px) scale(1.005);
   }

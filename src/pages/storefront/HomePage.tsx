@@ -63,6 +63,7 @@ export const HomePage: React.FC = () => {
   const { settings, products, loading } = useStore();
   const [slideIndex, setSlideIndex] = useState(0);
   const [enableTransition, setEnableTransition] = useState(true);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const totalSlides = HERO_BANNER_SLIDES.length;
 
@@ -77,7 +78,7 @@ export const HomePage: React.FC = () => {
 
   // Seamless infinite loop reset when reaching the cloned first slide at the end
   useEffect(() => {
-    if (slideIndex === totalSlides) {
+    if (slideIndex >= totalSlides) {
       const resetTimer = window.setTimeout(() => {
         setEnableTransition(false);
         setSlideIndex(0);
@@ -86,6 +87,25 @@ export const HomePage: React.FC = () => {
     }
   }, [slideIndex, totalSlides]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0]?.clientX ?? null);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const endX = e.changedTouches[0]?.clientX ?? touchStartX;
+    const diff = touchStartX - endX;
+    if (Math.abs(diff) > 40) {
+      setEnableTransition(true);
+      if (diff > 0) {
+        setSlideIndex((prev) => (prev + 1) % totalSlides);
+      } else {
+        setSlideIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+      }
+    }
+    setTouchStartX(null);
+  };
+
   const activeDotIndex = slideIndex % totalSlides;
 
   const featuredFiltered = products.filter((p) => p.is_featured);
@@ -93,9 +113,13 @@ export const HomePage: React.FC = () => {
   const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
   return (
-    <div className="space-y-10 sm:space-y-16 pb-14 sm:pb-20 animate-page-enter">
-      {/* 1. HERO BANNER INFINITE LOOPING SLIDER (2s Speed, No Arrow Icons) */}
-      <section className="relative w-full overflow-hidden bg-[#16041A] border-b-2 border-[#B8862D] select-none">
+    <div className="space-y-8 sm:space-y-16 pb-12 sm:pb-20 animate-page-enter">
+      {/* 1. HERO BANNER INFINITE LOOPING SLIDER (3s Speed, Touch Swipe Enabled, No Arrow Icons) */}
+      <section
+        className="relative w-full overflow-hidden bg-[#16041A] border-b-2 border-[#B8862D] select-none"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="relative w-full max-w-[1600px] mx-auto aspect-[16/9] max-h-[680px] overflow-hidden">
           {/* Seamless Infinite Forward Sliding Track */}
           <div
@@ -148,8 +172,8 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 2. SEPARATE TOP SECTION: COMPACT MULTI-COLOR ANIMATED BRAND PILLARS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
           {[
             {
               title: 'Precision Tailoring',
@@ -197,20 +221,20 @@ export const HomePage: React.FC = () => {
               <div
                 key={item.title}
                 style={{ animationDelay: item.delay }}
-                className={`feature-pill-animated group relative rounded-full border px-3.5 py-2.5 overflow-hidden flex items-center gap-2.5 cursor-default ${item.cardBg}`}
+                className={`feature-pill-animated group relative rounded-2xl sm:rounded-full border px-2.5 sm:px-3.5 py-2 sm:py-2.5 overflow-hidden flex items-center gap-2 sm:gap-2.5 cursor-default ${item.cardBg}`}
               >
                 {/* Continuous Light Sweep Shimmer */}
                 <div className="logo-3d-sheen opacity-35 group-hover:opacity-75" />
 
                 <div
                   style={{ animationDelay: item.delay }}
-                  className={`feature-icon-animated relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${item.iconBox}`}
+                  className={`feature-icon-animated relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${item.iconBox}`}
                 >
-                  <IconComponent className="w-4 h-4" />
+                  <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
 
                 <h3
-                  className={`font-couture-unique relative z-10 text-[11px] xl:text-[12px] font-black leading-snug tracking-wide ${item.titleClass}`}
+                  className={`font-couture-unique relative z-10 text-[9.5px] sm:text-[11px] xl:text-[12px] font-black leading-tight tracking-wide ${item.titleClass}`}
                 >
                   {item.title}
                 </h3>
@@ -221,29 +245,29 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 3. SEPARATE BOTTOM SECTION: ANIMATED PRET COLLECTION HEADING + 6 PRODUCTS */}
-      <section id="featured-collection" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative bg-gradient-to-b from-white via-[#FAF6F0]/90 to-white border border-[#D8B572]/60 rounded-2xl p-6 sm:p-9 shadow-[0_14px_40px_-14px_rgba(58,16,66,0.14)] overflow-hidden space-y-9">
+      <section id="featured-collection" className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8">
+        <div className="relative bg-gradient-to-b from-white via-[#FAF6F0]/90 to-white border border-[#D8B572]/60 rounded-2xl p-3 sm:p-9 shadow-[0_14px_40px_-14px_rgba(58,16,66,0.14)] overflow-hidden space-y-6 sm:space-y-9">
           {/* Top Animated Gold Shimmer Bar */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#3A1042] via-[#B8862D] to-[#8C2D56]" />
 
           {/* Animated Header Block */}
-          <div className="relative text-center flex flex-col items-center">
-            <div className="feature-pill-animated inline-flex items-center justify-center gap-2 px-4 py-1 rounded-full bg-[#3A1042]/10 border border-[#B8862D]/50 text-[11px] font-bold tracking-[0.22em] uppercase text-[#8C2D56] shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#B8862D] animate-pulse" />
+          <div className="relative text-center flex flex-col items-center pt-1">
+            <div className="feature-pill-animated inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-1 rounded-full bg-[#3A1042]/10 border border-[#B8862D]/50 text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#8C2D56] shadow-xs">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B8862D] animate-pulse" />
               <span>Signature Ensembles</span>
-              <Sparkles className="w-3.5 h-3.5 text-[#B8862D] animate-pulse" />
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B8862D] animate-pulse" />
             </div>
 
-            <h2 className="collection-title-shimmer font-serif-editorial text-4xl sm:text-5xl lg:text-6xl font-bold mt-2.5 leading-tight">
+            <h2 className="collection-title-shimmer font-serif-editorial text-2xl sm:text-5xl lg:text-6xl font-bold mt-2 leading-tight px-2">
               The Rang <span className="italic font-normal">e</span> Rosh Pret Collection
             </h2>
 
             {/* Animated Expanding Gold Divider */}
-            <div className="collection-gold-line mx-auto mt-3 rounded-full" />
+            <div className="collection-gold-line mx-auto mt-2.5 rounded-full" />
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-7">
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <div
                   key={n}
@@ -252,7 +276,7 @@ export const HomePage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-7 pt-1">
               {featuredProducts.map((product, idx) => (
                 <ProductCard key={product.id} product={product} index={idx} />
               ))}
