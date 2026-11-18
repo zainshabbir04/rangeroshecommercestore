@@ -84,7 +84,7 @@ export const HomePage: React.FC = () => {
 
   const featuredFiltered = products.filter((p) => p.is_featured);
   const featuredProducts = featuredFiltered.length > 0 ? featuredFiltered : products;
-  const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+  const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
   return (
     <div className="space-y-10 sm:space-y-16 pb-14 sm:pb-20 animate-page-enter">

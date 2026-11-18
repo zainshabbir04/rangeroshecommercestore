@@ -48,7 +48,7 @@ export const AdminSettingsPage: React.FC = () => {
   };
 
   const handleRestoreOriginalLogo = async () => {
-    const defaultLogo = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+    const defaultLogo = '/assets/logo/rang-e-rosh-logo-v2.jpg';
     const updatedForm = { ...form, logo_url: defaultLogo };
     setForm(updatedForm);
     try {
@@ -126,7 +126,7 @@ export const AdminSettingsPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-2">
             <img
-              src={form.logo_url || settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'}
+              src={form.logo_url || settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg'}
               alt="Store Logo"
               className="w-20 h-20 rounded-full object-contain bg-[#FAF6F0] p-1 border-2 border-[#B8862D]"
             />

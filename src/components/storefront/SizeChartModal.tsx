@@ -52,7 +52,7 @@ export const SizeChartModal: React.FC = () => {
   ];
 
   const selectedSizeObj = sizeData.find((s) => s.code === activeSizeCode) || sizeData[1];
-  const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+  const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">

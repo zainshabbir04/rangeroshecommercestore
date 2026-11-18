@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v1.json');
+const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v2.json');
 const STANDARD_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
-const OFFICIAL_LOGO_URL = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
 const DEFAULT_SETTINGS = {
   id: 1,

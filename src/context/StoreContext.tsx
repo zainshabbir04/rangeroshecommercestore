@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   id: 1,
   store_name: 'Rang e Rosh',
   store_tagline: 'Ladies Stitched Suits — Pret Collection',
-  logo_url: '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
+  logo_url: '/assets/logo/rang-e-rosh-logo-v2.jpg',
   contact_email: 'rangerosh.official@gmail.com',
   contact_phone: '+923 130 888 048',
   whatsapp_number: '+923 200 300 552',
@@ -74,13 +74,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const data = await api.getStorefrontInit();
 
       // Resolve any IndexedDB media references for logo or product images
-      const resolvedLogo = data.settings?.logo_url
-        ? await resolveMediaUrl(data.settings.logo_url)
-        : '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+      const rawLogoUrl =
+        !data.settings?.logo_url ||
+        data.settings.logo_url === '/assets/logo/website-logo.jpg' ||
+        data.settings.logo_url === '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+          ? '/assets/logo/rang-e-rosh-logo-v2.jpg'
+          : data.settings.logo_url;
+      const resolvedLogo = await resolveMediaUrl(rawLogoUrl);
 
       const resolvedSettings: StoreSettings = {
         ...data.settings,
-        logo_url: resolvedLogo || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
+        logo_url: resolvedLogo || '/assets/logo/rang-e-rosh-logo-v2.jpg',
       };
 
       const resolvedProducts = await Promise.all(

@@ -162,7 +162,7 @@ export const StorefrontLayout: React.FC = () => {
     settings.store_tagline.trim() !== 'Ladies Stitched Suits — Pret Collection'
       ? settings.store_tagline.trim()
       : 'Ladies Stitched Suits';
-  const logoUrl = settings?.logo_url || '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg';
+  const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
   const whatsappClean = settings?.whatsapp_clean || '923200300552';
 
   const announcementSlides = React.useMemo(() => {
