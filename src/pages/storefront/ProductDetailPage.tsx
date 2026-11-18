@@ -815,7 +815,7 @@ export const ProductDetailPage: React.FC = () => {
               <div className="collection-gold-line mx-auto rounded-full" />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((rel, idx) => (
                 <ProductCard key={rel.id} product={rel} index={idx} />
               ))}
