@@ -44,6 +44,8 @@ async function runTests() {
   // 3. Prevent Overselling (Ordering more than available stock)
   console.log('3️⃣  Testing Inventory Protection Against Overselling...');
   const annaInitialStock = prodRes.data.product.inventory.available_stock;
+  const annaInitialReserved = prodRes.data.product.inventory.reserved_stock;
+  const annaInitialSold = prodRes.data.product.inventory.sold_quantity;
   const oversellRes = await fetchJson('/api/orders', {
     method: 'POST',
     body: JSON.stringify({
@@ -107,8 +109,8 @@ async function runTests() {
   );
   assert.strictEqual(
     afterPendingProd.data.product.inventory.reserved_stock,
-    1,
-    'Reserved stock should be 1'
+    annaInitialReserved + 1,
+    'Reserved stock should increment by 1'
   );
   console.log('   ✅ Verified Pending order reserved 1 unit without premature deduction.');
 
@@ -151,12 +153,12 @@ async function runTests() {
   );
   assert.strictEqual(
     afterConfirmProd.data.product.inventory.reserved_stock,
-    0,
+    annaInitialReserved,
     'Reserved stock must be released upon confirmation'
   );
   assert.strictEqual(
     afterConfirmProd.data.product.inventory.sold_quantity,
-    1,
+    annaInitialSold + 1,
     'Sold quantity must increment by 1'
   );
   console.log(
@@ -181,7 +183,7 @@ async function runTests() {
   );
   assert.strictEqual(
     afterCancelProd.data.product.inventory.sold_quantity,
-    0,
+    annaInitialSold,
     'Sold quantity must be decremented after cancellation'
   );
   console.log(
