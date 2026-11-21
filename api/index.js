@@ -477,6 +477,34 @@ export default function handler(req, res) {
       return res.status(200).json({ products: list });
     }
 
+    // 2.5 Product Reviews (GET & POST /api/products/:slug/reviews)
+    const revMatch = pathname.match(/^\/api\/products\/([^/]+)\/reviews$/);
+    if (revMatch) {
+      const slugKey = decodeURIComponent(revMatch[1]).toLowerCase();
+      if (!state.reviews) state.reviews = {};
+      if (method === 'GET') {
+        return res.status(200).json({ reviews: state.reviews[slugKey] || [] });
+      }
+      if (method === 'POST') {
+        const list = state.reviews[slugKey] || [];
+        const newRev = {
+          id: body.id || `rev-${slugKey}-${Date.now()}`,
+          product_slug: slugKey,
+          customer_name: String(body.customer_name || 'Verified Customer').trim(),
+          city: String(body.city || 'Pakistan').trim(),
+          rating: Math.min(5, Math.max(1, Number(body.rating) || 5)),
+          selected_size: String(body.selected_size || 'Medium').trim(),
+          title: String(body.title || '').trim(),
+          comment: String(body.comment || '').trim(),
+          verified: true,
+          created_at: body.created_at || 'Just now',
+        };
+        state.reviews[slugKey] = [newRev, ...list];
+        saveCloudState(state);
+        return res.status(201).json({ review: newRev, reviews: state.reviews[slugKey] });
+      }
+    }
+
     // 3. Public Product Detail
     if (pathname.startsWith('/api/products/') && method === 'GET') {
       const slugOrId = decodeURIComponent(pathname.slice('/api/products/'.length));

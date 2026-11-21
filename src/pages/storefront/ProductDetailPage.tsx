@@ -28,6 +28,7 @@ import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { UniversalVideoPlayer } from '../../components/common/UniversalVideoPlayer';
+import { ProductReviewsSection } from '../../components/storefront/ProductReviewsSection';
 
 const PRODUCT_META_LOOKUP: Record<
   string,
@@ -801,7 +802,10 @@ export const ProductDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. RELATED PRODUCTS SECTION */}
+      {/* 3. CUSTOMER REVIEWS & RATINGS SECTION */}
+      <ProductReviewsSection product={product} />
+
+      {/* 4. RELATED PRODUCTS SECTION */}
       {relatedProducts.length > 0 && (
         <section className="pt-8 border-t border-[#E5D9C5]">
           <div className="bg-white/90 border border-[#D8B572]/60 rounded-3xl p-3 sm:p-8 shadow-xs space-y-6 sm:space-y-7">
