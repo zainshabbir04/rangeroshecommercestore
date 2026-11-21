@@ -169,7 +169,7 @@ export const AdminLayout: React.FC = () => {
 
           <div className="flex items-center gap-4 text-xs">
             <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-[#F3ECE0] text-[#3A1042] font-medium border border-[#E5D9C5]">
-              WhatsApp Dispatch: <strong>{settings?.whatsapp_number || '+923 200 300 552'}</strong>
+              WhatsApp Dispatch: <strong>{settings?.whatsapp_number || '03130888048'}</strong>
             </span>
             <Link
               to="/"

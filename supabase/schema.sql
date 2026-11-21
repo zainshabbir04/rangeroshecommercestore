@@ -19,12 +19,12 @@ CREATE TABLE IF NOT EXISTS store_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   store_name TEXT NOT NULL DEFAULT 'Rang e Rosh',
   store_tagline TEXT NOT NULL DEFAULT 'Ladies Stitched Suits — Pret Collection',
-  logo_url TEXT NOT NULL DEFAULT '/assets/logo/website-logo.jpg',
+  logo_url TEXT NOT NULL DEFAULT '/assets/logo/rang-e-rosh-logo-v2.jpg',
   contact_email TEXT NOT NULL DEFAULT 'rangerosh.official@gmail.com',
-  contact_phone TEXT NOT NULL DEFAULT '+923 130 888 048',
-  whatsapp_number TEXT NOT NULL DEFAULT '+923 200 300 552',
+  contact_phone TEXT NOT NULL DEFAULT '03130888048',
+  whatsapp_number TEXT NOT NULL DEFAULT '03130888048',
   shipping_charges REAL NOT NULL DEFAULT 250,
-  free_shipping_threshold REAL NOT NULL DEFAULT 15000,
+  free_shipping_threshold REAL NOT NULL DEFAULT 10000,
   low_stock_threshold INTEGER NOT NULL DEFAULT 5,
   currency TEXT NOT NULL DEFAULT 'PKR',
   announcement_text TEXT NOT NULL DEFAULT 'Complimentary Nationwide Shipping on Orders Above PKR 15,000 | WhatsApp Concierge Ordering Available',
@@ -182,5 +182,19 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 12. PRODUCT REVIEWS
+CREATE TABLE IF NOT EXISTS product_reviews (
+  id TEXT PRIMARY KEY,
+  product_slug TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  city TEXT NOT NULL DEFAULT 'Pakistan',
+  rating INTEGER NOT NULL DEFAULT 5,
+  selected_size TEXT NOT NULL DEFAULT 'Medium',
+  title TEXT NOT NULL DEFAULT '',
+  comment TEXT NOT NULL DEFAULT '',
+  verified INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

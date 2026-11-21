@@ -94,11 +94,15 @@ async function runTests() {
   assert.strictEqual(createdOrder.status, 'Pending', 'Initial order status must be Pending');
   assert.ok(createdOrder.whatsapp_message.includes(createdOrder.order_number));
   assert.ok(
-    createdOrder.whatsapp_url.startsWith('https://wa.me/923001234567?text='),
-    'WhatsApp URL should target the client WhatsApp number directly'
+    createdOrder.store_whatsapp_url.startsWith('https://wa.me/923130888048?text='),
+    'Short order WhatsApp URL should target the Rang e Rosh WhatsApp number (03130888048)'
+  );
+  assert.ok(
+    createdOrder.customer_whatsapp_url.startsWith('https://wa.me/923001234567?text='),
+    'Detailed confirmation WhatsApp URL should target the client WhatsApp number directly'
   );
   console.log(`   ✅ Created Order #${createdOrder.order_number} (Status: ${createdOrder.status})`);
-  console.log(`   ✅ Generated Store-to-Client WhatsApp URL: ${createdOrder.whatsapp_url.slice(0, 65)}...`);
+  console.log(`   ✅ Generated Client-to-Store Short WhatsApp URL: ${createdOrder.store_whatsapp_url.slice(0, 65)}...`);
 
   // Verify stock is reserved (not yet deducted from available_stock while Pending)
   const afterPendingProd = await fetchJson('/api/products/anna');

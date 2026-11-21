@@ -951,6 +951,18 @@ export const fallbackStore = {
     return { product: updated };
   },
 
+  syncProduct(prod: Product) {
+    if (!prod || !prod.id) return;
+    const products = getProducts();
+    const idx = products.findIndex((p) => p.id === prod.id || p.slug === prod.slug);
+    if (idx >= 0) {
+      products[idx] = prod;
+    } else {
+      products.push(prod);
+    }
+    saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+  },
+
   deleteProduct(id: number) {
     const products = getProducts().filter((p) => p.id !== Number(id));
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);

@@ -103,31 +103,38 @@ export function initializeDatabase(): void {
     ).run(
       process.env.STORE_NAME || 'Rang e Rosh',
       process.env.STORE_TAGLINE || 'Ladies Stitched Suits — Pret Collection',
-      '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg',
+      '/assets/logo/rang-e-rosh-logo-v2.jpg',
       process.env.STORE_EMAIL || 'rangerosh.official@gmail.com',
-      process.env.STORE_CONTACT_PHONE || '+923 130 888 048',
-      process.env.STORE_SHIPPING_WHATSAPP || '+923 200 300 552',
+      process.env.STORE_CONTACT_PHONE || '03130888048',
+      process.env.STORE_SHIPPING_WHATSAPP || '03130888048',
       Number(process.env.DEFAULT_SHIPPING_CHARGE || 250),
-      Number(process.env.FREE_SHIPPING_THRESHOLD || 15000),
+      Number(process.env.FREE_SHIPPING_THRESHOLD || 10000),
       Number(process.env.DEFAULT_LOW_STOCK_THRESHOLD || 5),
-      'Complimentary Nationwide Shipping on Orders Above PKR 15,000  •  Direct WhatsApp Concierge Order Confirmation',
+      'Complimentary Nationwide Shipping on Orders Above PKR 10,000  •  Direct WhatsApp Concierge Order Confirmation',
       'RANG E ROSH  •  LUXURY PRET COLLECTION',
       'Artisanal Embroidery & Timeless Stitched Elegance',
       'Discover our signature 2-piece stitched ensembles, meticulously tailored with intricate threadwork, refined fabrics, and effortless modern silhouettes.',
       'Crafted for Poise & Everyday Luxury',
       'Every Rang e Rosh ensemble features high-density precision tailoring, reinforced embroidery facings, and breathable seasonal weaves.',
       'https://www.instagram.com/rangerosh/',
-      'https://www.youtube.com/@rangerosh',
+      'https://www.youtube.com/@RangeRosh',
       'https://www.tiktok.com/@rangerosh',
       'https://www.facebook.com/RangeRosh/',
       JSON.stringify(['Cash on Delivery (COD)', 'Bank Transfer (Confirm via WhatsApp)'])
     );
   } else {
-    // Ensure existing database uses the official Rang e Rosh Clothing logo if still set to old default
+    // Ensure existing database uses the official Rang e Rosh Clothing logo and WhatsApp number
     db.prepare(
       `UPDATE store_settings
-       SET logo_url = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
-       WHERE logo_url = '/assets/logo/website-logo.jpg' OR logo_url = ''`
+       SET logo_url = '/assets/logo/rang-e-rosh-logo-v2.jpg'
+       WHERE logo_url = '/assets/logo/website-logo.jpg'
+          OR logo_url = '/uploads/1794056903993-429854-rang-e-rosh-logo.jpg'
+          OR logo_url = ''`
+    ).run();
+    db.prepare(
+      `UPDATE store_settings
+       SET whatsapp_number = '03130888048', contact_phone = '03130888048'
+       WHERE whatsapp_number = '+923 200 300 552' OR whatsapp_number = ''`
     ).run();
   }
 

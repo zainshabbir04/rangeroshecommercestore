@@ -307,9 +307,9 @@ export const api = {
         return fallbackStore.createProduct(payload);
       }
     );
-    if (!usedFallback) {
+    if (!usedFallback && res?.product) {
       try {
-        fallbackStore.createProduct(payload);
+        fallbackStore.syncProduct(res.product);
       } catch {
         // keep local fallback in sync
       }
@@ -331,9 +331,9 @@ export const api = {
         return fallbackStore.updateProduct(id, payload);
       }
     );
-    if (!usedFallback) {
+    if (!usedFallback && res?.product) {
       try {
-        fallbackStore.updateProduct(id, payload);
+        fallbackStore.syncProduct(res.product);
       } catch {
         // keep local fallback in sync
       }
@@ -439,14 +439,25 @@ export const api = {
       note?: string;
     }
   ) => {
+    let usedFallback = false;
     const res = await request<{ product: Product }>(
       `/api/admin/inventory/${productId}/adjust`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
-      () => fallbackStore.adjustInventory(productId, payload)
+      () => {
+        usedFallback = true;
+        return fallbackStore.adjustInventory(productId, payload);
+      }
     );
+    if (!usedFallback && res?.product) {
+      try {
+        fallbackStore.syncProduct(res.product);
+      } catch {
+        // keep local fallback in sync
+      }
+    }
     emitStoreSync();
     return res;
   },

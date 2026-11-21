@@ -316,30 +316,62 @@ app.get('/api/products', (req: Request, res: Response) => {
   }
 });
 
-const productReviewsMap: Record<string, any[]> = {};
-
 app.get('/api/products/:slug/reviews', (req: Request, res: Response) => {
-  const slugKey = String(req.params.slug || '').toLowerCase();
-  res.json({ reviews: productReviewsMap[slugKey] || [] });
+  try {
+    const slugKey = String(req.params.slug || '').toLowerCase();
+    const rows = db
+      .prepare('SELECT * FROM product_reviews WHERE product_slug = ? ORDER BY rowid DESC')
+      .all(slugKey) as any[];
+    res.json({
+      reviews: rows.map((r) => ({ ...r, verified: Boolean(r.verified) })),
+    });
+  } catch {
+    res.json({ reviews: [] });
+  }
 });
 
 app.post('/api/products/:slug/reviews', (req: Request, res: Response) => {
-  const slugKey = String(req.params.slug || '').toLowerCase();
-  const body = req.body || {};
-  const newRev = {
-    id: body.id || `rev-${slugKey}-${Date.now()}`,
-    product_slug: slugKey,
-    customer_name: String(body.customer_name || 'Verified Customer').trim(),
-    city: String(body.city || 'Pakistan').trim(),
-    rating: Math.min(5, Math.max(1, Number(body.rating) || 5)),
-    selected_size: String(body.selected_size || 'Medium').trim(),
-    title: String(body.title || '').trim(),
-    comment: String(body.comment || '').trim(),
-    verified: true,
-    created_at: body.created_at || 'Just now',
-  };
-  productReviewsMap[slugKey] = [newRev, ...(productReviewsMap[slugKey] || [])];
-  res.status(201).json({ review: newRev, reviews: productReviewsMap[slugKey] });
+  try {
+    const slugKey = String(req.params.slug || '').toLowerCase();
+    const body = req.body || {};
+    const newRev = {
+      id: body.id || `rev-${slugKey}-${Date.now()}`,
+      product_slug: slugKey,
+      customer_name: String(body.customer_name || 'Verified Customer').trim(),
+      city: String(body.city || 'Pakistan').trim(),
+      rating: Math.min(5, Math.max(1, Number(body.rating) || 5)),
+      selected_size: String(body.selected_size || 'Medium').trim(),
+      title: String(body.title || '').trim(),
+      comment: String(body.comment || '').trim(),
+      verified: 1,
+      created_at: body.created_at || 'Just now',
+    };
+    db.prepare(
+      `INSERT OR REPLACE INTO product_reviews (
+        id, product_slug, customer_name, city, rating, selected_size, title, comment, verified, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      newRev.id,
+      newRev.product_slug,
+      newRev.customer_name,
+      newRev.city,
+      newRev.rating,
+      newRev.selected_size,
+      newRev.title,
+      newRev.comment,
+      newRev.verified,
+      newRev.created_at
+    );
+    const rows = db
+      .prepare('SELECT * FROM product_reviews WHERE product_slug = ? ORDER BY rowid DESC')
+      .all(slugKey) as any[];
+    res.status(201).json({
+      review: { ...newRev, verified: true },
+      reviews: rows.map((r) => ({ ...r, verified: Boolean(r.verified) })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to save review' });
+  }
 });
 
 app.get('/api/products/:slugOrId', (req: Request, res: Response) => {
