@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'rer_fallback_settings_v6',
   ORDERS: 'rer_fallback_orders_v6',
   TRANSACTIONS: 'rer_fallback_transactions_v6',
+  ADMIN_AUTH: 'rer_admin_auth_v1',
 };
 
 const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
@@ -693,21 +694,81 @@ export const fallbackStore = {
   },
 
   adminLogin(email: string, password: string) {
-    if (
-      email.trim().toLowerCase() === 'rangerosh.official@gmail.com' &&
-      (password === 'RangERosh@2026' || password === 'RangeRosh@Admin2026')
-    ) {
+    const savedAuth = loadFromStorage<{ email: string; password: string }>(STORAGE_KEYS.ADMIN_AUTH, {
+      email: 'rangerosh.official@gmail.com',
+      password: 'RangeRosh@Admin2026',
+    });
+    const cleanEmail = email.trim().toLowerCase();
+    const expectedEmail = (savedAuth.email || 'rangerosh.official@gmail.com').trim().toLowerCase();
+    const isCustomPasswordSet =
+      savedAuth.password &&
+      savedAuth.password !== 'RangeRosh@Admin2026' &&
+      savedAuth.password !== 'RangERosh@2026';
+
+    const validPassword = isCustomPasswordSet
+      ? password === savedAuth.password
+      : password === savedAuth.password ||
+        password === 'RangeRosh@Admin2026' ||
+        password === 'RangERosh@2026';
+
+    if (cleanEmail === expectedEmail && validPassword) {
       return {
         token: 'rer-static-admin-token-2026',
         admin: {
           id: 1,
-          email: 'rangerosh.official@gmail.com',
+          email: savedAuth.email || 'rangerosh.official@gmail.com',
           name: 'Rang e Rosh Admin',
           role: 'super_admin',
         },
       };
     }
     throw new Error('Invalid admin email or password.');
+  },
+
+  changeAdminPassword(payload: {
+    email?: string;
+    current_password: string;
+    new_password: string;
+  }) {
+    const savedAuth = loadFromStorage<{ email: string; password: string }>(STORAGE_KEYS.ADMIN_AUTH, {
+      email: 'rangerosh.official@gmail.com',
+      password: 'RangeRosh@Admin2026',
+    });
+    const isCustomPasswordSet =
+      savedAuth.password &&
+      savedAuth.password !== 'RangeRosh@Admin2026' &&
+      savedAuth.password !== 'RangERosh@2026';
+
+    const validCurrent = isCustomPasswordSet
+      ? payload.current_password === savedAuth.password
+      : payload.current_password === savedAuth.password ||
+        payload.current_password === 'RangeRosh@Admin2026' ||
+        payload.current_password === 'RangERosh@2026';
+
+    if (!validCurrent) {
+      throw new Error('Current password is incorrect.');
+    }
+    if (!payload.new_password || payload.new_password.trim().length < 6) {
+      throw new Error('New password must be at least 6 characters long.');
+    }
+
+    const nextEmail = payload.email?.trim() || savedAuth.email || 'rangerosh.official@gmail.com';
+    saveToStorage(STORAGE_KEYS.ADMIN_AUTH, {
+      email: nextEmail,
+      password: payload.new_password.trim(),
+    });
+    return { message: 'Admin password updated successfully!' };
+  },
+
+  syncAdminPassword(newPassword: string, email?: string) {
+    const savedAuth = loadFromStorage<{ email: string; password: string }>(STORAGE_KEYS.ADMIN_AUTH, {
+      email: 'rangerosh.official@gmail.com',
+      password: 'RangeRosh@Admin2026',
+    });
+    saveToStorage(STORAGE_KEYS.ADMIN_AUTH, {
+      email: email?.trim() || savedAuth.email || 'rangerosh.official@gmail.com',
+      password: newPassword.trim(),
+    });
   },
 
   adminMe() {

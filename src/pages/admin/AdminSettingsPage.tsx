@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Upload, Save, AlertCircle } from 'lucide-react';
+import { Check, Upload, Save, AlertCircle, KeyRound, Lock } from 'lucide-react';
 import { StoreSettings } from '../../types';
 import { api } from '../../services/api';
 import { useStore } from '../../context/StoreContext';
@@ -13,6 +13,16 @@ export const AdminSettingsPage: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(
     null
   );
+
+  // Admin Password Change State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -433,6 +443,136 @@ export const AdminSettingsPage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* 5. Admin Security & Change Password Section */}
+      <div className="bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4 text-xs">
+        <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33] border-b border-[#E5D9C5] pb-2 flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-[#B8862D]" />
+          <span>5. Admin Password &amp; Security</span>
+        </h3>
+
+        {passwordFeedback && (
+          <div
+            className={`p-3.5 rounded-xs font-semibold flex items-center gap-2 ${
+              passwordFeedback.type === 'success'
+                ? 'bg-[#2E6F73]/15 text-[#2E6F73] border border-[#2E6F73]/30'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}
+          >
+            {passwordFeedback.type === 'success' ? (
+              <Check className="w-4 h-4 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            )}
+            <span>{passwordFeedback.text}</span>
+          </div>
+        )}
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setPasswordFeedback(null);
+            if (newPassword.trim().length < 6) {
+              setPasswordFeedback({
+                type: 'error',
+                text: 'New password must be at least 6 characters long.',
+              });
+              return;
+            }
+            if (newPassword !== confirmNewPassword) {
+              setPasswordFeedback({
+                type: 'error',
+                text: 'New password and confirm password do not match.',
+              });
+              return;
+            }
+            setChangingPassword(true);
+            try {
+              const res = await api.changeAdminPassword({
+                current_password: currentPassword,
+                new_password: newPassword.trim(),
+              });
+              setPasswordFeedback({
+                type: 'success',
+                text: res.message || 'Admin password updated successfully!',
+              });
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmNewPassword('');
+            } catch (err: any) {
+              setPasswordFeedback({
+                type: 'error',
+                text: err.message || 'Failed to update admin password.',
+              });
+            } finally {
+              setChangingPassword(false);
+            }
+          }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end"
+        >
+          <div>
+            <label className="block font-semibold uppercase tracking-wider mb-1">
+              Current Password *
+            </label>
+            <div className="relative">
+              <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                className="w-full pl-9 pr-3 py-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold uppercase tracking-wider mb-1">
+              New Password *
+            </label>
+            <div className="relative">
+              <KeyRound className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Min 6 characters"
+                className="w-full pl-9 pr-3 py-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold uppercase tracking-wider mb-1">
+              Confirm New Password *
+            </label>
+            <div className="relative">
+              <KeyRound className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                className="w-full pl-9 pr-3 py-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
+              />
+            </div>
+          </div>
+
+          <div className="sm:col-span-3 flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={changingPassword}
+              className="px-6 py-3 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold uppercase tracking-[0.14em] rounded-xs flex items-center gap-2 cursor-pointer shadow-sm"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>{changingPassword ? 'Updating Password...' : 'Change Admin Password'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

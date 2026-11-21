@@ -386,6 +386,16 @@ function loadCloudState() {
       products: JSON.parse(JSON.stringify(SEED_PRODUCTS)),
       orders: [],
       transactions: [],
+      admin_auth: {
+        email: 'rangerosh.official@gmail.com',
+        password: 'RangeRosh@Admin2026',
+      },
+    };
+  }
+  if (!memoryState.admin_auth) {
+    memoryState.admin_auth = {
+      email: 'rangerosh.official@gmail.com',
+      password: 'RangeRosh@Admin2026',
     };
   }
   if (
@@ -682,25 +692,68 @@ export default function handler(req, res) {
       return res.status(200).json({ order });
     }
 
-    // 6. Admin Login & Session
+    // 6. Admin Login, Session & Password Change
     if (pathname === '/api/admin/login' && method === 'POST') {
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
-      if (
-        email === 'rangerosh.official@gmail.com' &&
-        (password === 'RangERosh@2026' || password === 'RangeRosh@Admin2026')
-      ) {
+      const savedEmail = String(state.admin_auth?.email || 'rangerosh.official@gmail.com')
+        .trim()
+        .toLowerCase();
+      const savedPassword = String(state.admin_auth?.password || 'RangeRosh@Admin2026');
+      const isCustom =
+        savedPassword &&
+        savedPassword !== 'RangeRosh@Admin2026' &&
+        savedPassword !== 'RangERosh@2026';
+
+      const validPassword = isCustom
+        ? password === savedPassword
+        : password === savedPassword ||
+          password === 'RangERosh@2026' ||
+          password === 'RangeRosh@Admin2026';
+
+      if (email === savedEmail && validPassword) {
         return res.status(200).json({
           token: 'rer-cloud-admin-token-2026',
           admin: {
             id: 1,
-            email: 'rangerosh.official@gmail.com',
+            email: state.admin_auth?.email || 'rangerosh.official@gmail.com',
             name: 'Rang e Rosh Admin',
             role: 'super_admin',
           },
         });
       }
       return res.status(401).json({ error: 'Invalid admin email or password.' });
+    }
+
+    if (pathname === '/api/admin/change-password' && method === 'POST') {
+      const currentPassword = String(body.current_password || '');
+      const newPassword = String(body.new_password || '').trim();
+      const savedPassword = String(state.admin_auth?.password || 'RangeRosh@Admin2026');
+      const isCustom =
+        savedPassword &&
+        savedPassword !== 'RangeRosh@Admin2026' &&
+        savedPassword !== 'RangERosh@2026';
+
+      const validCurrent = isCustom
+        ? currentPassword === savedPassword
+        : currentPassword === savedPassword ||
+          currentPassword === 'RangERosh@2026' ||
+          currentPassword === 'RangeRosh@Admin2026';
+
+      if (!validCurrent) {
+        return res.status(401).json({ error: 'Current password is incorrect.' });
+      }
+      if (newPassword.length < 6) {
+        return res
+          .status(400)
+          .json({ error: 'New password must be at least 6 characters long.' });
+      }
+      state.admin_auth = {
+        email: body.email?.trim() || state.admin_auth?.email || 'rangerosh.official@gmail.com',
+        password: newPassword,
+      };
+      saveCloudState(state);
+      return res.status(200).json({ message: 'Admin password updated successfully!' });
     }
 
     if (pathname === '/api/admin/me' && method === 'GET') {

@@ -226,6 +226,33 @@ export const api = {
       () => fallbackStore.adminMe()
     ),
 
+  changeAdminPassword: async (payload: {
+    email?: string;
+    current_password: string;
+    new_password: string;
+  }) => {
+    let usedFallback = false;
+    const res = await request<{ message: string }>(
+      '/api/admin/change-password',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      () => {
+        usedFallback = true;
+        return fallbackStore.changeAdminPassword(payload);
+      }
+    );
+    if (!usedFallback) {
+      try {
+        fallbackStore.syncAdminPassword(payload.new_password, payload.email);
+      } catch {
+        // keep local storage in sync
+      }
+    }
+    return res;
+  },
+
   // Admin Dashboard
   getDashboard: async (range = 'all') => {
     const res = await request<DashboardData>(
