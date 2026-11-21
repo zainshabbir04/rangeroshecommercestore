@@ -45,6 +45,62 @@ function mergeOrdersList(primary: Order[], secondary: Order[]): Order[] {
   });
 }
 
+function mergeProductsWithAdminEdits(serverProducts: Product[]): Product[] {
+  try {
+    const dirty = fallbackStore.getDirtyMeta();
+    const localProducts = fallbackStore.getAdminProducts().products || [];
+    const localById = new Map<number, Product>();
+    for (const lp of localProducts) {
+      localById.set(lp.id, lp);
+    }
+
+    const merged: Product[] = [];
+    const seenIds = new Set<number>();
+
+    for (const sp of serverProducts || []) {
+      if (dirty.deletedProductIds?.[String(sp.id)]) {
+        continue;
+      }
+      seenIds.add(sp.id);
+      if (dirty.productsModified?.[String(sp.id)] && localById.has(sp.id)) {
+        merged.push(localById.get(sp.id)!);
+      } else {
+        merged.push(sp);
+      }
+    }
+
+    // Also include any newly created products saved locally by Admin
+    for (const lp of localProducts) {
+      if (dirty.deletedProductIds?.[String(lp.id)]) continue;
+      if (!seenIds.has(lp.id) && dirty.productsModified?.[String(lp.id)]) {
+        merged.push(lp);
+      }
+    }
+
+    return merged;
+  } catch {
+    return serverProducts;
+  }
+}
+
+function mergeSettingsWithAdminEdits(serverSettings: StoreSettings): StoreSettings {
+  try {
+    const dirty = fallbackStore.getDirtyMeta();
+    if (dirty.settingsModified) {
+      const localSettings = fallbackStore.getSettings().settings;
+      if (localSettings) {
+        return {
+          ...serverSettings,
+          ...localSettings,
+        };
+      }
+    }
+    return serverSettings;
+  } catch {
+    return serverSettings;
+  }
+}
+
 async function request<T>(
   url: string,
   options: RequestInit = {},
@@ -117,14 +173,25 @@ async function request<T>(
 
 export const api = {
   // Storefront
-  getStorefrontInit: () =>
-    request<{ settings: StoreSettings; products: Product[]; categories: string[] }>(
+  getStorefrontInit: async () => {
+    const res = await request<{ settings: StoreSettings; products: Product[]; categories: string[] }>(
       '/api/storefront/init',
       {},
       () => fallbackStore.getStorefrontInit()
-    ),
+    );
+    const mergedSettings = mergeSettingsWithAdminEdits(res.settings);
+    const mergedProducts = mergeProductsWithAdminEdits(res.products || []).filter(
+      (p) => p.is_published
+    );
+    const categories = Array.from(new Set(mergedProducts.map((p) => p.category)));
+    return {
+      settings: mergedSettings,
+      products: mergedProducts,
+      categories,
+    };
+  },
 
-  getProducts: (params?: {
+  getProducts: async (params?: {
     category?: string;
     search?: string;
     sort?: string;
@@ -136,19 +203,28 @@ export const api = {
     if (params?.sort) qs.set('sort', params.sort);
     if (params?.availability) qs.set('availability', params.availability);
     const queryStr = qs.toString();
-    return request<{ products: Product[] }>(
+    const res = await request<{ products: Product[] }>(
       `/api/products${queryStr ? `?${queryStr}` : ''}`,
       {},
       () => fallbackStore.getProducts(params)
     );
+    return {
+      products: mergeProductsWithAdminEdits(res.products || []).filter((p) => p.is_published),
+    };
   },
 
-  getProductDetail: (slugOrId: string) =>
-    request<{ product: Product; relatedProducts: Product[] }>(
+  getProductDetail: async (slugOrId: string) => {
+    const res = await request<{ product: Product; relatedProducts: Product[] }>(
       `/api/products/${slugOrId}`,
       {},
       () => fallbackStore.getProductDetail(slugOrId)
-    ),
+    );
+    const mergedAll = mergeProductsWithAdminEdits([res.product, ...(res.relatedProducts || [])]);
+    const product =
+      mergedAll.find((p) => p.slug === slugOrId || String(p.id) === slugOrId) || res.product;
+    const relatedProducts = mergedAll.filter((p) => p.id !== product.id && p.is_published);
+    return { product, relatedProducts };
+  },
 
   getProductReviews: (slug: string) =>
     request<{ reviews: any[] }>(
@@ -194,9 +270,20 @@ export const api = {
         return fallbackStore.createOrder(payload);
       }
     );
-    if (!usedFallback && res?.order) {
+    if (!usedFallback) {
       try {
-        fallbackStore.syncOrder(res.order);
+        // Reserve stock in local fallback too so inventory stays in sync
+        const localProds = fallbackStore.getAdminProducts().products || [];
+        for (const item of payload.items || []) {
+          const p = localProds.find((pr) => pr.id === Number(item.product_id));
+          if (p) {
+            p.inventory.reserved_stock = Number(p.inventory.reserved_stock || 0) + Number(item.quantity || 1);
+            fallbackStore.syncProduct(p, true);
+          }
+        }
+        if (res?.order) {
+          fallbackStore.syncOrder(res.order);
+        }
       } catch {
         // keep local fallback in sync
       }
@@ -280,24 +367,41 @@ export const api = {
     try {
       const localOrders = fallbackStore.getAdminOrders().orders || [];
       const mergedAllOrders = mergeOrdersList(res.recent_orders || [], localOrders);
+      const mergedProducts = mergeProductsWithAdminEdits(
+        res.top_selling_products || fallbackStore.getAdminProducts().products || []
+      );
       const confirmedStatuses = ['Confirmed', 'Processing', 'Shipped', 'Delivered'];
       const confirmedOrders = mergedAllOrders.filter((o) => confirmedStatuses.includes(o.status));
       const pendingOrders = mergedAllOrders.filter((o) => o.status === 'Pending');
       const cancelledOrders = mergedAllOrders.filter((o) => o.status === 'Cancelled');
       const totalSales = confirmedOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
       const pendingSales = pendingOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+      const lowStockProducts = mergedProducts.filter(
+        (p) => p.inventory.stock_status === 'Low Stock'
+      );
+      const outOfStockProducts = mergedProducts.filter(
+        (p) => p.inventory.stock_status === 'Out of Stock'
+      );
 
       return {
         ...res,
         summary: {
           ...res.summary,
+          total_products: mergedProducts.length,
           total_orders: Math.max(res.summary?.total_orders || 0, mergedAllOrders.length),
           confirmed_orders: Math.max(res.summary?.confirmed_orders || 0, confirmedOrders.length),
           pending_orders: Math.max(res.summary?.pending_orders || 0, pendingOrders.length),
           cancelled_orders: Math.max(res.summary?.cancelled_orders || 0, cancelledOrders.length),
           total_sales: Math.max(res.summary?.total_sales || 0, totalSales),
           pending_sales: Math.max(res.summary?.pending_sales || 0, pendingSales),
+          low_stock_count: lowStockProducts.length,
+          out_of_stock_count: outOfStockProducts.length,
         },
+        low_stock_products: lowStockProducts,
+        out_of_stock_products: outOfStockProducts,
+        top_selling_products: [...mergedProducts].sort(
+          (a, b) => b.inventory.sold_quantity - a.inventory.sold_quantity
+        ),
         recent_orders: mergedAllOrders.slice(0, 15),
       };
     } catch {
@@ -306,10 +410,14 @@ export const api = {
   },
 
   // Admin Products
-  getAdminProducts: () =>
-    request<{ products: Product[] }>('/api/admin/products', {}, () =>
+  getAdminProducts: async () => {
+    const res = await request<{ products: Product[] }>('/api/admin/products', {}, () =>
       fallbackStore.getAdminProducts()
-    ),
+    );
+    return {
+      products: mergeProductsWithAdminEdits(res.products || []),
+    };
+  },
 
   createProduct: async (payload: any) => {
     let usedFallback = false;
@@ -326,7 +434,7 @@ export const api = {
     );
     if (!usedFallback && res?.product) {
       try {
-        fallbackStore.syncProduct(res.product);
+        fallbackStore.syncProduct(res.product, true);
       } catch {
         // keep local fallback in sync
       }
@@ -348,11 +456,15 @@ export const api = {
         return fallbackStore.updateProduct(id, payload);
       }
     );
-    if (!usedFallback && res?.product) {
+    if (!usedFallback) {
       try {
-        fallbackStore.syncProduct(res.product);
+        // Always apply the admin's payload directly to local persistent storage first,
+        // so even if a serverless instance cold-starts on the next request, the exact edit is preserved.
+        fallbackStore.updateProduct(id, payload);
       } catch {
-        // keep local fallback in sync
+        if (res?.product) {
+          fallbackStore.syncProduct(res.product, true);
+        }
       }
     }
     emitStoreSync();
@@ -438,12 +550,27 @@ export const api = {
   },
 
   // Admin Inventory
-  getInventory: () =>
-    request<{ products: Product[]; transactions: InventoryTransaction[] }>(
+  getInventory: async () => {
+    const res = await request<{ products: Product[]; transactions: InventoryTransaction[] }>(
       '/api/admin/inventory',
       {},
       () => fallbackStore.getInventory()
-    ),
+    );
+    const localInv = fallbackStore.getInventory();
+    const seenTxIds = new Set<string>();
+    const mergedTxs: InventoryTransaction[] = [];
+    for (const tx of [...(localInv.transactions || []), ...(res.transactions || [])]) {
+      const key = `${tx.product_id}-${tx.change_type}-${tx.created_at}-${tx.note}`;
+      if (!seenTxIds.has(key)) {
+        seenTxIds.add(key);
+        mergedTxs.push(tx);
+      }
+    }
+    return {
+      products: mergeProductsWithAdminEdits(res.products || []),
+      transactions: mergedTxs,
+    };
+  },
 
   adjustInventory: async (
     productId: number,
@@ -468,11 +595,15 @@ export const api = {
         return fallbackStore.adjustInventory(productId, payload);
       }
     );
-    if (!usedFallback && res?.product) {
+    if (!usedFallback) {
       try {
-        fallbackStore.syncProduct(res.product);
+        const localAdjusted = fallbackStore.adjustInventory(productId, payload);
+        emitStoreSync();
+        return localAdjusted;
       } catch {
-        // keep local fallback in sync
+        if (res?.product) {
+          fallbackStore.syncProduct(res.product, true);
+        }
       }
     }
     emitStoreSync();
@@ -508,19 +639,25 @@ export const api = {
   },
 
   updateOrderStatus: async (id: number, status: string) => {
+    let usedFallback = false;
     const res = await request<{ order: Order }>(
       `/api/admin/orders/${id}/status`,
       {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       },
-      () => fallbackStore.updateOrderStatus(id, status)
+      () => {
+        usedFallback = true;
+        return fallbackStore.updateOrderStatus(id, status);
+      }
     );
-    if (res?.order) {
+    if (!usedFallback) {
       try {
-        fallbackStore.syncOrder(res.order);
+        fallbackStore.updateOrderStatus(id, status);
       } catch {
-        // keep local fallback in sync
+        if (res?.order) {
+          fallbackStore.syncOrder(res.order);
+        }
       }
     }
     emitStoreSync();
@@ -528,10 +665,14 @@ export const api = {
   },
 
   // Admin Settings
-  getSettings: () =>
-    request<{ settings: StoreSettings }>('/api/admin/settings', {}, () =>
+  getSettings: async () => {
+    const res = await request<{ settings: StoreSettings }>('/api/admin/settings', {}, () =>
       fallbackStore.getSettings()
-    ),
+    );
+    return {
+      settings: mergeSettingsWithAdminEdits(res.settings),
+    };
+  },
 
   updateSettings: async (payload: Partial<StoreSettings>) => {
     let usedFallback = false;

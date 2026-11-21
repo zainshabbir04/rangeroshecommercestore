@@ -50,6 +50,20 @@ export const AdminInventoryPage: React.FC = () => {
     loadInventory();
   }, [loadInventory]);
 
+  useEffect(() => {
+    const handleSync = () => {
+      loadInventory();
+    };
+    window.addEventListener('rer-store-sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('rer-store-sync', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [loadInventory]);
+
   const getProductSizeStock = (prod: Product, size: string): number => {
     const map = prod.inventory.size_stock;
     if (map && size in map) {

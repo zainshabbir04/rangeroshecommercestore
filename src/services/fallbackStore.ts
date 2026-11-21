@@ -14,7 +14,14 @@ const STORAGE_KEYS = {
   ORDERS: 'rer_fallback_orders_v6',
   TRANSACTIONS: 'rer_fallback_transactions_v6',
   ADMIN_AUTH: 'rer_admin_auth_v1',
+  DIRTY_META: 'rer_admin_dirty_meta_v1',
 };
+
+interface DirtyMetaState {
+  settingsModified: boolean;
+  productsModified: Record<string, boolean>;
+  deletedProductIds: Record<string, boolean>;
+}
 
 const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
@@ -463,6 +470,38 @@ function getTransactions(): InventoryTransaction[] {
   return loadFromStorage<InventoryTransaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
 }
 
+function getDirtyMeta(): DirtyMetaState {
+  return loadFromStorage<DirtyMetaState>(STORAGE_KEYS.DIRTY_META, {
+    settingsModified: false,
+    productsModified: {},
+    deletedProductIds: {},
+  });
+}
+
+function saveDirtyMeta(meta: DirtyMetaState): void {
+  saveToStorage(STORAGE_KEYS.DIRTY_META, meta);
+}
+
+function markProductModified(productId: number): void {
+  const meta = getDirtyMeta();
+  meta.productsModified[String(productId)] = true;
+  delete meta.deletedProductIds[String(productId)];
+  saveDirtyMeta(meta);
+}
+
+function markProductDeleted(productId: number): void {
+  const meta = getDirtyMeta();
+  meta.deletedProductIds[String(productId)] = true;
+  delete meta.productsModified[String(productId)];
+  saveDirtyMeta(meta);
+}
+
+function markSettingsModified(): void {
+  const meta = getDirtyMeta();
+  meta.settingsModified = true;
+  saveDirtyMeta(meta);
+}
+
 export const fallbackStore = {
   getStorefrontInit() {
     const settings = getSettings();
@@ -885,6 +924,7 @@ export const fallbackStore = {
 
     products.push(newProd);
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+    markProductModified(newProd.id);
     return { product: newProd };
   },
 
@@ -944,28 +984,38 @@ export const fallbackStore = {
         ),
         updated_at: new Date().toISOString(),
       },
+      updated_at: new Date().toISOString(),
     };
 
     products[idx] = updated;
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+    markProductModified(updated.id);
     return { product: updated };
   },
 
-  syncProduct(prod: Product) {
+  syncProduct(prod: Product, isAdminEdit = true) {
     if (!prod || !prod.id) return;
     const products = getProducts();
     const idx = products.findIndex((p) => p.id === prod.id || p.slug === prod.slug);
+    const syncedProd = {
+      ...prod,
+      updated_at: new Date().toISOString(),
+    };
     if (idx >= 0) {
-      products[idx] = prod;
+      products[idx] = syncedProd;
     } else {
-      products.push(prod);
+      products.push(syncedProd);
     }
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+    if (isAdminEdit) {
+      markProductModified(prod.id);
+    }
   },
 
   deleteProduct(id: number) {
     const products = getProducts().filter((p) => p.id !== Number(id));
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+    markProductDeleted(Number(id));
     return { message: 'Product deleted successfully.' };
   },
 
@@ -1047,6 +1097,7 @@ export const fallbackStore = {
     products[idx] = prod;
     saveToStorage(STORAGE_KEYS.PRODUCTS, products);
     saveToStorage(STORAGE_KEYS.TRANSACTIONS, txs);
+    markProductModified(prod.id);
     return { product: prod };
   },
 
@@ -1079,6 +1130,7 @@ export const fallbackStore = {
     if (idx === -1) throw new Error('Order not found');
     const order = orders[idx];
     const isConfirming = ['Confirmed', 'Processing', 'Shipped', 'Delivered'].includes(status);
+    const isCancelling = status === 'Cancelled';
 
     if (isConfirming && !order.stock_deducted) {
       for (const item of order.items) {
@@ -1092,9 +1144,30 @@ export const fallbackStore = {
           );
           p.inventory.sold_quantity += item.quantity;
           p.inventory.reserved_stock = Math.max(0, p.inventory.reserved_stock - item.quantity);
+          markProductModified(p.id);
         }
       }
       order.stock_deducted = true;
+      order.stock_reserved = false;
+    } else if (isCancelling) {
+      for (const item of order.items) {
+        const p = products.find((pr) => pr.id === item.product_id);
+        if (p && p.inventory.size_stock) {
+          const sz = item.selected_size || 'Small';
+          if (order.stock_deducted) {
+            p.inventory.size_stock[sz] = (p.inventory.size_stock[sz] || 0) + item.quantity;
+            p.inventory.available_stock = Object.values(p.inventory.size_stock).reduce(
+              (s, n) => s + n,
+              0
+            );
+            p.inventory.sold_quantity = Math.max(0, p.inventory.sold_quantity - item.quantity);
+          } else if (order.stock_reserved) {
+            p.inventory.reserved_stock = Math.max(0, p.inventory.reserved_stock - item.quantity);
+          }
+          markProductModified(p.id);
+        }
+      }
+      order.stock_deducted = false;
       order.stock_reserved = false;
     }
 
@@ -1110,8 +1183,19 @@ export const fallbackStore = {
   },
 
   updateSettings(payload: Partial<StoreSettings>) {
-    const updated = { ...getSettings(), ...payload, updated_at: new Date().toISOString() };
+    const cleanWa = String(payload.whatsapp_number || getSettings().whatsapp_number || '')
+      .replace(/\D/g, '')
+      .replace(/^0/, '92');
+    const updated = {
+      ...getSettings(),
+      ...payload,
+      whatsapp_clean: cleanWa || getSettings().whatsapp_clean,
+      updated_at: new Date().toISOString(),
+    };
     saveToStorage(STORAGE_KEYS.SETTINGS, updated);
+    markSettingsModified();
     return { settings: updated };
   },
+
+  getDirtyMeta,
 };

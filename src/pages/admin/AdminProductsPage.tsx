@@ -100,6 +100,15 @@ export const AdminProductsPage: React.FC = () => {
   // Confirmation Dialog state for Delete Product
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setSaveFeedback({ type, text });
+    setTimeout(() => setSaveFeedback(null), 4000);
+  };
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -115,6 +124,20 @@ export const AdminProductsPage: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
+  }, [loadProducts]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      loadProducts();
+    };
+    window.addEventListener('rer-store-sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('rer-store-sync', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [loadProducts]);
 
   const openCreateModal = () => {
@@ -318,9 +341,13 @@ export const AdminProductsPage: React.FC = () => {
       };
 
       if (form.id) {
-        await api.updateProduct(form.id, payload);
+        const res = await api.updateProduct(form.id, payload);
+        setProducts((prev) => prev.map((p) => (p.id === form.id ? res.product : p)));
+        showToast(`Saved changes to "${payload.name}" (${payload.available_stock} units in stock).`);
       } else {
-        await api.createProduct(payload);
+        const res = await api.createProduct(payload);
+        setProducts((prev) => [...prev, res.product]);
+        showToast(`Added new product "${payload.name}" to the Pret Collection.`);
       }
 
       setEditorOpen(false);
@@ -338,9 +365,13 @@ export const AdminProductsPage: React.FC = () => {
     field: 'is_published' | 'is_featured'
   ) => {
     try {
-      await api.updateProduct(prod.id, {
+      const res = await api.updateProduct(prod.id, {
         [field]: !prod[field],
       });
+      setProducts((prev) => prev.map((p) => (p.id === prod.id ? res.product : p)));
+      showToast(
+        `Updated "${prod.name}" (${field === 'is_published' ? (!prod.is_published ? 'Published' : 'Unpublished') : !prod.is_featured ? 'Featured' : 'Unfeatured'}).`
+      );
       await loadProducts();
       await refreshStorefront();
     } catch {
@@ -352,8 +383,10 @@ export const AdminProductsPage: React.FC = () => {
     if (!productToDelete) return;
     setDeleting(true);
     try {
+      const deletedName = productToDelete.name;
       await api.deleteProduct(productToDelete.id);
       setProductToDelete(null);
+      showToast(`Deleted "${deletedName}" from the catalog.`);
       await loadProducts();
       await refreshStorefront();
     } catch {
@@ -385,6 +418,19 @@ export const AdminProductsPage: React.FC = () => {
           <span>Add New Product</span>
         </button>
       </div>
+
+      {saveFeedback && (
+        <div
+          className={`p-3.5 rounded-xs text-xs font-semibold flex items-center gap-2 ${
+            saveFeedback.type === 'success'
+              ? 'bg-[#2E6F73]/15 text-[#2E6F73] border border-[#2E6F73]/30'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
+          <Check className="w-4 h-4 shrink-0" />
+          <span>{saveFeedback.text}</span>
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="bg-white border border-[#E5D9C5] rounded-xs overflow-hidden">
