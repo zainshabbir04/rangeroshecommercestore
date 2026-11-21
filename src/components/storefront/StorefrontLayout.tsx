@@ -163,7 +163,7 @@ export const StorefrontLayout: React.FC = () => {
       ? settings.store_tagline.trim()
       : 'Ladies Stitched Suits';
   const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
-  const whatsappClean = settings?.whatsapp_clean || '923200300552';
+  const whatsappClean = settings?.whatsapp_clean || '923130888048';
 
   const announcementSlides = React.useMemo(() => {
     const customText = settings?.announcement_text?.trim();

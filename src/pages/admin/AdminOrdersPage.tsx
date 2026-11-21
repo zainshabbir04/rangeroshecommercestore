@@ -291,8 +291,13 @@ export const AdminOrdersPage: React.FC = () => {
                           href={ord.customer_whatsapp_url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => {
+                            if (ord.status === 'Pending') {
+                              handleStatusUpdate(ord.id, 'Confirmed', false);
+                            }
+                          }}
                           className="px-2.5 py-1.5 border border-[#2E6F73] text-[#2E6F73] hover:bg-[#2E6F73] hover:text-white rounded-xs font-semibold inline-flex items-center gap-1"
-                          title={`Send WhatsApp message to ${ord.customer_phone}`}
+                          title={`Send WhatsApp confirmation from 03130888048 to ${ord.customer_phone}`}
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
                           <span>WhatsApp</span>
@@ -575,10 +580,15 @@ export const AdminOrdersPage: React.FC = () => {
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => {
+                      if (selectedOrder.status === 'Pending') {
+                        handleStatusUpdate(selectedOrder.id, 'Confirmed', false);
+                      }
+                    }}
                     className="w-full py-3.5 px-4 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span>Open WhatsApp & Send to Customer</span>
+                    <span>Open WhatsApp (03130888048) &amp; Auto-Confirm to Customer</span>
                   </a>
                 </div>
               </div>

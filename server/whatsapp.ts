@@ -55,7 +55,7 @@ export function formatPKR(amount: number): string {
 export function buildAdminToCustomerWhatsAppMessage(
   order: OrderForWhatsApp,
   storeName = 'Rang e Rosh',
-  storePhone = '+923 130 888 048'
+  storePhone = '03130888048'
 ): string {
   const itemLines = order.items
     .map((item, idx) => {
@@ -65,10 +65,8 @@ export function buildAdminToCustomerWhatsAppMessage(
     })
     .join('\n\n');
 
-  let statusHeader = `Thank you for placing your order with *${storeName}*! ✨\nWe have received your order *#${order.order_number}* and are pleased to share your order confirmation details below:`;
-  if (order.status === 'Confirmed') {
-    statusHeader = `Great news from *${storeName}*! ✨\nYour order *#${order.order_number}* has been *CONFIRMED* and is being prepared for dispatch.`;
-  } else if (order.status === 'Processing') {
+  let statusHeader = `Great news from *${storeName}*! ✨\nYour order *#${order.order_number}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`;
+  if (order.status === 'Processing') {
     statusHeader = `Update from *${storeName}*: Your order *#${order.order_number}* is now *IN PROCESSING* at our atelier.`;
   } else if (order.status === 'Shipped') {
     statusHeader = `Exciting news from *${storeName}*! 🚚\nYour order *#${order.order_number}* has been *SHIPPED* and is on its way to you.`;
@@ -85,7 +83,9 @@ export function buildAdminToCustomerWhatsAppMessage(
     ``,
     `━━━━━━━━━━━━━━━━━━━━`,
     `🛍️ *ORDER CONFIRMATION: #${order.order_number}*`,
-    `📌 *Order Status:* ${order.status}`,
+    `📌 *Order Status:* ${order.status === 'Pending' ? 'Confirmed' : order.status} ✅`,
+    `📞 *Confirmation From Store WhatsApp:* 03130888048`,
+    `📲 *Client WhatsApp:* ${order.customer_phone}`,
     `💳 *Payment Method:* ${order.payment_method}`,
     `━━━━━━━━━━━━━━━━━━━━`,
     ``,
@@ -105,11 +105,11 @@ export function buildAdminToCustomerWhatsAppMessage(
     `💰 *TOTAL AMOUNT: ${formatPKR(order.total_amount)}*`,
     `━━━━━━━━━━━━━━━━━━━━`,
     ``,
-    `Please reply *"YES"* to confirm your delivery address, or let us know if you need any assistance.`,
+    `Thank you for shopping with *${storeName}*! Your parcel will be dispatched shortly.`,
     ``,
     `Warm regards,`,
     `*${storeName} — Ladies Stitched Suits*`,
-    `📞 ${storePhone}`,
+    `📞 Official WhatsApp: ${storePhone || '03130888048'}`,
   ];
 
   return lines.join('\n');

@@ -50,6 +50,18 @@ export const OrderConfirmationPage: React.FC = () => {
     }
   }, [order, orderNumber]);
 
+  // Ensure the order is automatically marked Confirmed on the Admin Dashboard
+  useEffect(() => {
+    if (order && order.status === 'Pending') {
+      api
+        .updateOrderStatus(order.id, 'Confirmed')
+        .then((res) => {
+          setOrder(res.order);
+        })
+        .catch(() => {});
+    }
+  }, [order]);
+
   const handleCopyMessage = () => {
     if (!editableMessage) return;
     navigator.clipboard.writeText(editableMessage);
@@ -88,29 +100,38 @@ export const OrderConfirmationPage: React.FC = () => {
         <div className="w-16 h-16 rounded-full bg-[#2E6F73]/15 text-[#2E6F73] flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-9 h-9" />
         </div>
-        <span className="inline-block px-3 py-1 bg-[#F3ECE0] text-[#3A1042] text-xs font-semibold uppercase tracking-[0.18em] rounded-xs">
-          Order Saved • #{order.order_number}
+        <span className="inline-block px-3 py-1 bg-[#2E6F73]/15 text-[#2E6F73] text-xs font-bold uppercase tracking-[0.18em] rounded-xs">
+          Order Confirmed on Admin Dashboard • #{order.order_number}
         </span>
         <h1 className="font-serif-editorial text-3xl sm:text-5xl font-bold text-[#161F33]">
-          Order #{order.order_number} Ready for WhatsApp Confirmation
+          Order #{order.order_number} Confirmed &amp; Ready for Client WhatsApp
         </h1>
         <p className="text-sm text-[#161F33]/80 max-w-xl mx-auto leading-relaxed">
-          Order for <strong>{order.customer_name}</strong> (Client WhatsApp:{' '}
-          <strong className="text-[#2E6F73]">{order.customer_phone}</strong>) has been saved. Click
-          the button below to open your WhatsApp with the confirmation message addressed directly to{' '}
-          <strong>{order.customer_phone}</strong> and press <strong>Send</strong>.
+          Order for <strong>{order.customer_name}</strong> has been{' '}
+          <strong className="text-[#2E6F73]">Automatically Confirmed on the Admin Dashboard</strong>.
+          The confirmation message from official store WhatsApp{' '}
+          <strong className="text-[#3A1042]">03130888048</strong> is ready to send directly to the
+          client&apos;s WhatsApp number (<strong className="text-[#2E6F73]">{order.customer_phone}</strong>
+          ).
         </p>
 
-        {/* Primary WhatsApp Action Button: From My WhatsApp -> Client WhatsApp */}
+        {/* Primary WhatsApp Action Button: From 03130888048 -> Client WhatsApp */}
         <div className="pt-3 flex flex-wrap items-center justify-center gap-3 no-print">
           <a
             href={clientWhatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              if (order.status !== 'Confirmed') {
+                api.updateOrderStatus(order.id, 'Confirmed').catch(() => {});
+              }
+            }}
             className="px-7 py-4 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold tracking-[0.15em] uppercase rounded-xs shadow-md transition-all flex items-center gap-2.5"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>Send Confirmation from My WhatsApp to Client ({order.customer_phone})</span>
+            <span>
+              Send Confirmation from 03130888048 to Client ({order.customer_phone})
+            </span>
           </a>
 
           <button

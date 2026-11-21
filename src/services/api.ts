@@ -117,7 +117,7 @@ export const api = {
       () => fallbackStore.getProductDetail(slugOrId)
     ),
 
-  createOrder: (payload: {
+  createOrder: async (payload: {
     customer_name: string;
     customer_phone: string;
     customer_email?: string;
@@ -131,15 +131,29 @@ export const api = {
       selected_size?: string;
       selected_color?: string;
     }>;
-  }) =>
-    request<{ order: Order }>(
+  }) => {
+    let usedFallback = false;
+    const res = await request<{ order: Order }>(
       '/api/orders',
       {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, auto_confirm: true }),
       },
-      () => fallbackStore.createOrder(payload)
-    ),
+      () => {
+        usedFallback = true;
+        return fallbackStore.createOrder(payload);
+      }
+    );
+    if (!usedFallback) {
+      try {
+        fallbackStore.createOrder(payload);
+      } catch {
+        // keep local fallback in sync
+      }
+    }
+    emitStoreSync();
+    return res;
+  },
 
   lookupOrder: (orderNumber: string) =>
     request<{ order: Order }>(

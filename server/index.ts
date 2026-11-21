@@ -181,14 +181,21 @@ function getStoreSettings() {
       ? '/assets/logo/rang-e-rosh-logo-v2.jpg'
       : row.logo_url;
 
+  const waNum =
+    !row?.whatsapp_number || row.whatsapp_number === '+923 200 300 552'
+      ? '03130888048'
+      : row.whatsapp_number;
+
   return {
     ...row,
     logo_url: logoUrl,
+    contact_phone: row?.contact_phone || '03130888048',
+    whatsapp_number: waNum,
     shipping_charges: Number(row?.shipping_charges ?? 250),
     free_shipping_threshold: Number(row?.free_shipping_threshold ?? 15000),
     low_stock_threshold: Number(row?.low_stock_threshold ?? 5),
     payment_methods: paymentMethods,
-    whatsapp_clean: normalizeWhatsAppNumber(row?.whatsapp_number || '+923 200 300 552'),
+    whatsapp_clean: normalizeWhatsAppNumber(waNum),
   };
 }
 
@@ -545,7 +552,10 @@ app.post('/api/orders', (req: Request, res: Response) => {
       const seqNum = 1001 + Number(orderCountRow.count);
       const orderNumber = `RER-${seqNum}`;
 
-      // 5. Build Store -> Client WhatsApp Confirmation message (from your WhatsApp to Client WhatsApp)
+      const autoConfirm = Boolean(req.body.auto_confirm);
+      const initialStatus = autoConfirm ? 'Confirmed' : 'Pending';
+
+      // 5. Build Store -> Client WhatsApp Confirmation message (from 03130888048 to Client WhatsApp)
       const orderPayloadForWhatsApp = {
         order_number: orderNumber,
         customer_name: cleanName,
@@ -558,14 +568,14 @@ app.post('/api/orders', (req: Request, res: Response) => {
         subtotal,
         shipping_charges: shippingCharges,
         total_amount: totalAmount,
-        status: 'Pending',
+        status: initialStatus,
         items: resolvedItems,
       };
 
       const clientConfirmationMessage = buildAdminToCustomerWhatsAppMessage(
         orderPayloadForWhatsApp,
         settings.store_name,
-        settings.contact_phone
+        '03130888048'
       );
 
       const customerToStoreMessage = buildCustomerOrderWhatsAppMessage(
@@ -573,7 +583,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
         settings.store_name
       );
 
-      // 6. Insert Order row with status = 'Pending', stock_deducted = 0, stock_reserved = 1
+      // 6. Insert Order row
       const orderRes = db
         .prepare(
           `INSERT INTO orders (
@@ -581,7 +591,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
             shipping_address, city, order_notes, payment_method,
             subtotal, shipping_charges, total_amount, status,
             stock_deducted, stock_reserved, whatsapp_message
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0, 1, ?)`
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           orderNumber,
@@ -596,6 +606,9 @@ app.post('/api/orders', (req: Request, res: Response) => {
           subtotal,
           shippingCharges,
           totalAmount,
+          initialStatus,
+          autoConfirm ? 1 : 0,
+          autoConfirm ? 0 : 1,
           clientConfirmationMessage
         );
 
@@ -624,46 +637,90 @@ app.post('/api/orders', (req: Request, res: Response) => {
         );
       }
 
-      // 8. Reserve inventory for Pending order (note: per prompt requirement,
-      // "Only confirmed orders should deduct available inventory, using safe database transactions.
-      // Cancelled orders must release any reserved inventory.")
-      for (const [pid, requestedQty] of qtyByProduct.entries()) {
-        const invRow = db
-          .prepare('SELECT available_stock, reserved_stock FROM inventory WHERE product_id = ?')
-          .get(pid) as { available_stock: number; reserved_stock: number };
+      // 8. Deduct stock immediately if autoConfirm is true, otherwise reserve stock
+      if (autoConfirm) {
+        for (const [pid, requestedQty] of qtyByProduct.entries()) {
+          const invRow = db
+            .prepare('SELECT available_stock, reserved_stock, sold_quantity, size_stock_json FROM inventory WHERE product_id = ?')
+            .get(pid) as any;
 
-        const prevAvail = Number(invRow.available_stock);
-        const prevRes = Number(invRow.reserved_stock);
-        const newRes = prevRes + requestedQty;
+          const prevAvail = Number(invRow.available_stock);
+          const prevRes = Number(invRow.reserved_stock);
+          const prevSold = Number(invRow.sold_quantity);
+          const sizeStock = parseSizeStock(invRow.size_stock_json, prevAvail);
 
-        db.prepare(
-          `UPDATE inventory SET reserved_stock = ?, updated_at = datetime('now') WHERE product_id = ?`
-        ).run(newRes, pid);
+          for (const oi of resolvedItems.filter((x) => x.product_id === pid)) {
+            const sz = String(oi.selected_size || 'Small').trim();
+            if (STANDARD_SIZES.includes(sz)) {
+              sizeStock[sz] = Math.max(0, (sizeStock[sz] ?? 0) - oi.quantity);
+            }
+          }
 
-        db.prepare(
-          `INSERT INTO inventory_transactions (
-            product_id, order_id, change_type, quantity_delta,
-            previous_available, new_available, previous_reserved, new_reserved, note, performed_by
-          ) VALUES (?, ?, 'order_reserved', ?, ?, ?, ?, ?, ?, ?)`
-        ).run(
-          pid,
-          orderId,
-          requestedQty,
-          prevAvail,
-          prevAvail,
-          prevRes,
-          newRes,
-          `Reserved ${requestedQty} unit(s) for Pending Order #${orderNumber}`,
-          cleanName
-        );
+          const newAvail = Object.values(sizeStock).reduce((sum, n) => sum + n, 0);
+          const newSold = prevSold + requestedQty;
+
+          db.prepare(
+            `UPDATE inventory
+             SET available_stock = ?, sold_quantity = ?, size_stock_json = ?, updated_at = datetime('now')
+             WHERE product_id = ?`
+          ).run(newAvail, newSold, JSON.stringify(sizeStock), pid);
+
+          db.prepare(
+            `INSERT INTO inventory_transactions (
+              product_id, order_id, change_type, quantity_delta,
+              previous_available, new_available, previous_reserved, new_reserved, note, performed_by
+            ) VALUES (?, ?, 'order_confirmed', ?, ?, ?, ?, ?, ?, ?)`
+          ).run(
+            pid,
+            orderId,
+            -requestedQty,
+            prevAvail,
+            newAvail,
+            prevRes,
+            prevRes,
+            `Order #${orderNumber} auto-confirmed — deducted ${requestedQty} unit(s)`,
+            cleanName
+          );
+        }
+      } else {
+        for (const [pid, requestedQty] of qtyByProduct.entries()) {
+          const invRow = db
+            .prepare('SELECT available_stock, reserved_stock FROM inventory WHERE product_id = ?')
+            .get(pid) as { available_stock: number; reserved_stock: number };
+
+          const prevAvail = Number(invRow.available_stock);
+          const prevRes = Number(invRow.reserved_stock);
+          const newRes = prevRes + requestedQty;
+
+          db.prepare(
+            `UPDATE inventory SET reserved_stock = ?, updated_at = datetime('now') WHERE product_id = ?`
+          ).run(newRes, pid);
+
+          db.prepare(
+            `INSERT INTO inventory_transactions (
+              product_id, order_id, change_type, quantity_delta,
+              previous_available, new_available, previous_reserved, new_reserved, note, performed_by
+            ) VALUES (?, ?, 'order_reserved', ?, ?, ?, ?, ?, ?, ?)`
+          ).run(
+            pid,
+            orderId,
+            requestedQty,
+            prevAvail,
+            prevAvail,
+            prevRes,
+            newRes,
+            `Reserved ${requestedQty} unit(s) for Pending Order #${orderNumber}`,
+            cleanName
+          );
+        }
       }
 
       db.exec('COMMIT');
 
-      // Direct WhatsApp URL from Store Owner's WhatsApp -> Client's WhatsApp (`cleanPhone`)
+      // Direct WhatsApp URL from Store Owner's WhatsApp (03130888048) -> Client's WhatsApp (`cleanPhone`)
       const clientWhatsappUrl = createWhatsAppUrl(cleanPhone, clientConfirmationMessage);
-      // Secondary URL from Client -> Store WhatsApp (`settings.whatsapp_number`)
-      const storeWhatsappUrl = createWhatsAppUrl(settings.whatsapp_number, customerToStoreMessage);
+      // Secondary URL from Client -> Store WhatsApp (03130888048)
+      const storeWhatsappUrl = createWhatsAppUrl('03130888048', customerToStoreMessage);
 
       // Also trigger optional background API dispatch if Meta Cloud API / UltraMsg is configured
       tryAutoSendWhatsAppToClient(cleanPhone, clientConfirmationMessage).catch(() => {});
@@ -682,7 +739,9 @@ app.post('/api/orders', (req: Request, res: Response) => {
           subtotal,
           shipping_charges: shippingCharges,
           total_amount: totalAmount,
-          status: 'Pending',
+          status: initialStatus,
+          stock_deducted: autoConfirm,
+          stock_reserved: !autoConfirm,
           items: resolvedItems,
           whatsapp_message: clientConfirmationMessage,
           whatsapp_url: clientWhatsappUrl,
@@ -690,7 +749,7 @@ app.post('/api/orders', (req: Request, res: Response) => {
           customer_whatsapp_url: clientWhatsappUrl,
           store_whatsapp_message: customerToStoreMessage,
           store_whatsapp_url: storeWhatsappUrl,
-          store_whatsapp: settings.whatsapp_number,
+          store_whatsapp: '03130888048',
         },
       });
     } catch (txErr: any) {

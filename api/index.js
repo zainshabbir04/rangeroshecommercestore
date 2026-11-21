@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v3.json');
+const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v4.json');
 const STANDARD_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
 const OFFICIAL_LOGO_URL = '/assets/logo/rang-e-rosh-logo-v2.jpg';
 
@@ -11,9 +11,9 @@ const DEFAULT_SETTINGS = {
   store_tagline: 'Ladies Stitched Suits — Pret Collection',
   logo_url: OFFICIAL_LOGO_URL,
   contact_email: 'rangerosh.official@gmail.com',
-  contact_phone: '+923 130 888 048',
-  whatsapp_number: '+923 200 300 552',
-  whatsapp_clean: '923200300552',
+  contact_phone: '03130888048',
+  whatsapp_number: '03130888048',
+  whatsapp_clean: '923130888048',
   shipping_charges: 250,
   free_shipping_threshold: 10000,
   low_stock_threshold: 5,
@@ -515,7 +515,7 @@ export default function handler(req, res) {
       return res.status(200).json({ product, relatedProducts });
     }
 
-    // 4. Create Order
+    // 4. Create Order (Auto-Confirmed on Admin Dashboard + WhatsApp Message from 03130888048 to Client)
     if (pathname === '/api/orders' && method === 'POST') {
       let subtotal = 0;
       const resolvedItems = (body.items || []).map((item) => {
@@ -531,7 +531,26 @@ export default function handler(req, res) {
         }
         const lineTotal = prod.effective_price * qty;
         subtotal += lineTotal;
-        prod.inventory.reserved_stock += qty;
+
+        // Deduct stock immediately as order is auto-confirmed
+        if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
+          prod.inventory.size_stock[selSize] = Math.max(
+            0,
+            Number(prod.inventory.size_stock[selSize] || 0) - qty
+          );
+          prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
+            (s, n) => s + Number(n || 0),
+            0
+          );
+        } else {
+          prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
+        }
+        prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
+        prod.inventory.stock_status = computeStockStatus(
+          prod.inventory.available_stock,
+          prod.inventory.low_stock_threshold
+        );
+
         return {
           product_id: prod.id,
           product_name: prod.name,
@@ -559,12 +578,40 @@ export default function handler(req, res) {
         )
         .join('\n');
 
-      const msg = `Assalam-o-Alaikum *${body.customer_name}*! ✨\nThank you for your order at *${state.settings.store_name}*.\n\n*Order ID:* #${orderNumber}\n*Items:*\n${itemsLines}\n\n*Total Payable:* PKR ${totalAmount.toLocaleString('en-PK')}\n*Delivery Address:* ${body.shipping_address}, ${body.city}\n*Payment:* ${body.payment_method}`;
-      const cleanCustomerPhone = String(body.customer_phone || '')
-        .replace(/\D/g, '')
-        .replace(/^0/, '92');
+      const msg = [
+        `Assalam-o-Alaikum *${body.customer_name}*! ✨`,
+        `Great news from *${state.settings.store_name}*! Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+        ``,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `🛍️ *ORDER CONFIRMATION: #${orderNumber}*`,
+        `📌 *Order Status:* Confirmed ✅`,
+        `📞 *Confirmation From Store WhatsApp:* 03130888048`,
+        `📲 *Client WhatsApp:* ${body.customer_phone}`,
+        `💳 *Payment Method:* ${body.payment_method || 'Cash on Delivery (COD)'}`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        ``,
+        `👗 *ORDERED ITEMS:*`,
+        itemsLines,
+        ``,
+        `• Subtotal: PKR ${subtotal.toLocaleString('en-PK')}`,
+        `• Shipping: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
+        `💰 *Total Payable:* PKR ${totalAmount.toLocaleString('en-PK')}`,
+        `📍 *Delivery Address:* ${body.shipping_address}, ${body.city}`,
+        ``,
+        `Thank you for shopping with *${state.settings.store_name}*!`,
+        `📞 Official WhatsApp: 03130888048`,
+      ].join('\n');
+
+      let cleanCustomerPhone = String(body.customer_phone || '').replace(/\D/g, '');
+      if (cleanCustomerPhone.startsWith('00')) cleanCustomerPhone = cleanCustomerPhone.slice(2);
+      else if (cleanCustomerPhone.startsWith('0') && cleanCustomerPhone.length === 11) {
+        cleanCustomerPhone = '92' + cleanCustomerPhone.slice(1);
+      } else if (cleanCustomerPhone.length === 10 && cleanCustomerPhone.startsWith('3')) {
+        cleanCustomerPhone = '92' + cleanCustomerPhone;
+      }
+
       const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(msg)}`;
-      const storeWhatsappUrl = `https://wa.me/${state.settings.whatsapp_clean}?text=${encodeURIComponent(msg)}`;
+      const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(msg)}`;
 
       const newOrder = {
         id: state.orders.length + 1,
@@ -579,16 +626,16 @@ export default function handler(req, res) {
         subtotal,
         shipping_charges: shipping,
         total_amount: totalAmount,
-        status: 'Pending',
-        stock_deducted: false,
-        stock_reserved: true,
+        status: 'Confirmed',
+        stock_deducted: true,
+        stock_reserved: false,
         whatsapp_message: msg,
         whatsapp_url: customerWhatsappUrl,
         customer_whatsapp_message: msg,
         customer_whatsapp_url: customerWhatsappUrl,
         store_whatsapp_message: msg,
         store_whatsapp_url: storeWhatsappUrl,
-        store_whatsapp: state.settings.whatsapp_number,
+        store_whatsapp: '03130888048',
         items: resolvedItems,
         created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
         updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
