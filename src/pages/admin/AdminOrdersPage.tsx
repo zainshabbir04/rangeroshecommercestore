@@ -588,7 +588,22 @@ export const AdminOrdersPage: React.FC = () => {
                     className="w-full py-3.5 px-4 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    <span>Open WhatsApp (03130888048) &amp; Auto-Confirm to Customer</span>
+                    <span>Send Confirmation to Client ({selectedOrder.customer_phone})</span>
+                  </a>
+
+                  <a
+                    href={getCustomerWhatsAppLink('03130888048', customWhatsappMsg)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      if (selectedOrder.status === 'Pending') {
+                        handleStatusUpdate(selectedOrder.id, 'Confirmed', false);
+                      }
+                    }}
+                    className="w-full py-3 px-4 bg-[#3A1042] hover:bg-[#8C2D56] text-white text-xs font-semibold uppercase tracking-wider rounded-xs flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#D8B572]" />
+                    <span>Send Order Message to My WhatsApp (03130888048)</span>
                   </a>
                 </div>
               </div>

@@ -722,8 +722,9 @@ app.post('/api/orders', (req: Request, res: Response) => {
       // Secondary URL from Client -> Store WhatsApp (03130888048)
       const storeWhatsappUrl = createWhatsAppUrl('03130888048', customerToStoreMessage);
 
-      // Also trigger optional background API dispatch if Meta Cloud API / UltraMsg is configured
+      // Also trigger optional background API dispatch to both Client WhatsApp and Store Owner WhatsApp (03130888048)
       tryAutoSendWhatsAppToClient(cleanPhone, clientConfirmationMessage).catch(() => {});
+      tryAutoSendWhatsAppToClient('03130888048', clientConfirmationMessage).catch(() => {});
 
       res.status(201).json({
         order: {

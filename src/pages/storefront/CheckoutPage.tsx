@@ -102,14 +102,17 @@ export const CheckoutPage: React.FC = () => {
       clearCart();
       await refreshStorefront();
 
-      // Open WhatsApp with the prefilled Order Confirmation message from your WhatsApp directly to the Client's WhatsApp number
-      const targetWhatsappUrl =
-        createdOrder.customer_whatsapp_url || createdOrder.whatsapp_url;
-      if (targetWhatsappUrl) {
-        window.open(targetWhatsappUrl, '_blank', 'noopener,noreferrer');
+      // Open WhatsApp with the prefilled Order Confirmation message to Store WhatsApp (03130888048)
+      const storeWhatsappUrl =
+        createdOrder.store_whatsapp_url ||
+        `https://wa.me/923130888048?text=${encodeURIComponent(
+          createdOrder.customer_whatsapp_message || createdOrder.whatsapp_message || ''
+        )}`;
+      if (storeWhatsappUrl) {
+        window.open(storeWhatsappUrl, '_blank', 'noopener,noreferrer');
       }
 
-      // Navigate to the Order Confirmation page where the user can also review and click Send on WhatsApp
+      // Navigate to the Order Confirmation page where both Store (03130888048) and Client WhatsApp buttons are available
       navigate(`/order-confirmation/${createdOrder.order_number}`, {
         state: { order: createdOrder },
       });
