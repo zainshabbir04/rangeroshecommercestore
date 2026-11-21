@@ -28,6 +28,23 @@ export function setAdminToken(token: string | null): void {
   }
 }
 
+const CLOUD_API_ORIGIN = 'https://rangeroshecommercestore.vercel.app';
+
+function mergeOrdersList(primary: Order[], secondary: Order[]): Order[] {
+  const byOrderNumber = new Map<string, Order>();
+  for (const ord of [...primary, ...secondary]) {
+    if (!ord || !ord.order_number) continue;
+    if (!byOrderNumber.has(ord.order_number)) {
+      byOrderNumber.set(ord.order_number, ord);
+    }
+  }
+  return Array.from(byOrderNumber.values()).sort((a, b) => {
+    const tA = new Date(a.created_at || 0).getTime() || 0;
+    const tB = new Date(b.created_at || 0).getTime() || 0;
+    return tB - tA || (b.id || 0) - (a.id || 0);
+  });
+}
+
 async function request<T>(
   url: string,
   options: RequestInit = {},
@@ -47,12 +64,28 @@ async function request<T>(
   }
 
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       ...options,
       headers,
     });
 
-    const contentType = res.headers.get('content-type') || '';
+    let contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json') && url.startsWith('/api/')) {
+      try {
+        const cloudRes = await fetch(`${CLOUD_API_ORIGIN}${url}`, {
+          ...options,
+          headers,
+        });
+        const cloudCt = cloudRes.headers.get('content-type') || '';
+        if (cloudCt.includes('application/json')) {
+          res = cloudRes;
+          contentType = cloudCt;
+        }
+      } catch {
+        // fallback handled below
+      }
+    }
+
     if (!contentType.includes('application/json')) {
       if (fallbackFn) {
         return await fallbackFn();
@@ -144,9 +177,9 @@ export const api = {
         return fallbackStore.createOrder(payload);
       }
     );
-    if (!usedFallback) {
+    if (!usedFallback && res?.order) {
       try {
-        fallbackStore.createOrder(payload);
+        fallbackStore.syncOrder(res.order);
       } catch {
         // keep local fallback in sync
       }
@@ -194,12 +227,39 @@ export const api = {
     ),
 
   // Admin Dashboard
-  getDashboard: (range = 'all') =>
-    request<DashboardData>(
+  getDashboard: async (range = 'all') => {
+    const res = await request<DashboardData>(
       `/api/admin/dashboard?range=${encodeURIComponent(range)}`,
       {},
       () => fallbackStore.getDashboard()
-    ),
+    );
+    try {
+      const localOrders = fallbackStore.getAdminOrders().orders || [];
+      const mergedAllOrders = mergeOrdersList(res.recent_orders || [], localOrders);
+      const confirmedStatuses = ['Confirmed', 'Processing', 'Shipped', 'Delivered'];
+      const confirmedOrders = mergedAllOrders.filter((o) => confirmedStatuses.includes(o.status));
+      const pendingOrders = mergedAllOrders.filter((o) => o.status === 'Pending');
+      const cancelledOrders = mergedAllOrders.filter((o) => o.status === 'Cancelled');
+      const totalSales = confirmedOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+      const pendingSales = pendingOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+
+      return {
+        ...res,
+        summary: {
+          ...res.summary,
+          total_orders: Math.max(res.summary?.total_orders || 0, mergedAllOrders.length),
+          confirmed_orders: Math.max(res.summary?.confirmed_orders || 0, confirmedOrders.length),
+          pending_orders: Math.max(res.summary?.pending_orders || 0, pendingOrders.length),
+          cancelled_orders: Math.max(res.summary?.cancelled_orders || 0, cancelledOrders.length),
+          total_sales: Math.max(res.summary?.total_sales || 0, totalSales),
+          pending_sales: Math.max(res.summary?.pending_sales || 0, pendingSales),
+        },
+        recent_orders: mergedAllOrders.slice(0, 15),
+      };
+    } catch {
+      return res;
+    }
+  },
 
   // Admin Products
   getAdminProducts: () =>
@@ -365,7 +425,7 @@ export const api = {
   },
 
   // Admin Orders
-  getAdminOrders: (params?: {
+  getAdminOrders: async (params?: {
     status?: string;
     search?: string;
     date_from?: string;
@@ -377,11 +437,19 @@ export const api = {
     if (params?.date_from) qs.set('date_from', params.date_from);
     if (params?.date_to) qs.set('date_to', params.date_to);
     const queryStr = qs.toString();
-    return request<{ orders: Order[] }>(
+    const res = await request<{ orders: Order[] }>(
       `/api/admin/orders${queryStr ? `?${queryStr}` : ''}`,
       {},
       () => fallbackStore.getAdminOrders(params)
     );
+    try {
+      const localOrders = fallbackStore.getAdminOrders(params).orders || [];
+      return {
+        orders: mergeOrdersList(res.orders || [], localOrders),
+      };
+    } catch {
+      return res;
+    }
   },
 
   updateOrderStatus: async (id: number, status: string) => {
@@ -393,6 +461,13 @@ export const api = {
       },
       () => fallbackStore.updateOrderStatus(id, status)
     );
+    if (res?.order) {
+      try {
+        fallbackStore.syncOrder(res.order);
+      } catch {
+        // keep local fallback in sync
+      }
+    }
     emitStoreSync();
     return res;
   },

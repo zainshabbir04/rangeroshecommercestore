@@ -73,6 +73,20 @@ export const AdminOrdersPage: React.FC = () => {
     loadOrders();
   }, [statusFilter, searchTerm, dateFrom, dateTo]);
 
+  useEffect(() => {
+    const handleSync = () => {
+      loadOrders();
+    };
+    window.addEventListener('rer-store-sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('rer-store-sync', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [loadOrders]);
+
   const handleOpenOrder = (order: Order) => {
     setSelectedOrder(order);
     setStatusError(null);

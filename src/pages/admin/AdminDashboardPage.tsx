@@ -11,9 +11,33 @@ import {
   ArrowRight,
   Calendar,
   RefreshCw,
+  MessageCircle,
+  MapPin,
 } from 'lucide-react';
-import { DashboardData } from '../../types';
+import { DashboardData, Order } from '../../types';
 import { api, formatPrice } from '../../services/api';
+
+function buildClientWhatsappUrl(ord: Order): string {
+  if (ord.customer_whatsapp_url) return ord.customer_whatsapp_url;
+  let clean = String(ord.customer_phone || '').replace(/\D/g, '');
+  if (clean.startsWith('00')) clean = clean.slice(2);
+  else if (clean.startsWith('0') && clean.length === 11) clean = '92' + clean.slice(1);
+  else if (clean.length === 10 && clean.startsWith('3')) clean = '92' + clean;
+  const msg =
+    ord.customer_whatsapp_message ||
+    ord.whatsapp_message ||
+    `Assalam-o-Alaikum ${ord.customer_name}! Your Rang e Rosh order #${ord.order_number} (PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}) is CONFIRMED ✅ from 03130888048.`;
+  return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
+}
+
+function buildStoreWhatsappUrl(ord: Order): string {
+  if (ord.store_whatsapp_url) return ord.store_whatsapp_url;
+  const msg =
+    ord.store_whatsapp_message ||
+    ord.whatsapp_message ||
+    `Order #${ord.order_number} Confirmed ✅ | Client: ${ord.customer_name} (${ord.customer_phone}) | Total: PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}`;
+  return `https://wa.me/923130888048?text=${encodeURIComponent(msg)}`;
+}
 
 export const AdminDashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -34,6 +58,20 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      loadDashboard();
+    };
+    window.addEventListener('rer-store-sync', handleSync);
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('rer-store-sync', handleSync);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [loadDashboard]);
 
   if (loading && !data) {
@@ -267,12 +305,17 @@ export const AdminDashboardPage: React.FC = () => {
 
       {/* Main Analytics & Top Products Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Recent Incoming Orders (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
+        {/* Recent Incoming Orders (8 cols) */}
+        <div className="lg:col-span-8 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
-            <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
-              Recent Incoming Orders
-            </h3>
+            <div>
+              <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
+                Customer Orders on Dashboard ({data?.recent_orders.length || 0})
+              </h3>
+              <p className="text-[11px] text-[#161F33]/65 mt-0.5">
+                Auto-confirmed incoming orders with direct WhatsApp links to Client &amp; 03130888048
+              </p>
+            </div>
             <Link
               to="/admin/orders"
               className="text-xs font-semibold uppercase tracking-wider text-[#3A1042] hover:text-[#8C2D56] flex items-center gap-1"
@@ -292,23 +335,52 @@ export const AdminDashboardPage: React.FC = () => {
                 <thead>
                   <tr className="border-b border-[#E5D9C5] text-[#161F33]/60 uppercase tracking-wider">
                     <th className="py-2.5 pr-3">Order ID</th>
-                    <th className="py-2.5 px-3">Customer</th>
+                    <th className="py-2.5 px-3">Customer &amp; WhatsApp</th>
+                    <th className="py-2.5 px-3">Ordered Suits &amp; City</th>
                     <th className="py-2.5 px-3">Total</th>
                     <th className="py-2.5 px-3">Status</th>
-                    <th className="py-2.5 pl-3 text-right">Action</th>
+                    <th className="py-2.5 pl-3 text-right">WhatsApp &amp; Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5D9C5]/60">
                   {data.recent_orders.map((ord) => (
-                    <tr key={ord.id} className="hover:bg-[#FAF6F0]/60">
-                      <td className="py-3 pr-3 font-mono font-semibold text-[#3A1042]">
-                        #{ord.order_number}
+                    <tr key={ord.id || ord.order_number} className="hover:bg-[#FAF6F0]/60 align-top">
+                      <td className="py-3 pr-3">
+                        <div className="font-mono font-bold text-[#3A1042]">
+                          #{ord.order_number}
+                        </div>
+                        {ord.created_at && (
+                          <div className="text-[10px] text-[#161F33]/55 mt-0.5">
+                            {String(ord.created_at).slice(0, 16)}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-semibold text-[#161F33]">{ord.customer_name}</div>
-                        <div className="text-[11px] text-[#161F33]/60">{ord.customer_phone}</div>
+                        <div className="text-[11px] text-[#161F33]/75 font-mono">
+                          {ord.customer_phone}
+                        </div>
                       </td>
-                      <td className="py-3 px-3 font-semibold text-[#161F33]">
+                      <td className="py-3 px-3">
+                        <div className="space-y-0.5">
+                          {(ord.items || []).map((it, idx) => (
+                            <div key={idx} className="text-[11px] font-medium text-[#161F33]">
+                              {it.quantity}× {it.product_name}{' '}
+                              <span className="text-[#8C2D56]">({it.selected_size || 'Small'})</span>
+                            </div>
+                          ))}
+                        </div>
+                        {ord.city && (
+                          <div className="flex items-center gap-1 text-[10px] text-[#161F33]/60 mt-1">
+                            <MapPin className="w-3 h-3 text-[#B8862D] shrink-0" />
+                            <span className="truncate max-w-[180px]">
+                              {ord.city}
+                              {ord.shipping_address ? ` — ${ord.shipping_address}` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-semibold text-[#161F33] whitespace-nowrap">
                         {formatPrice(ord.total_amount)}
                       </td>
                       <td className="py-3 px-3">
@@ -325,12 +397,34 @@ export const AdminDashboardPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 pl-3 text-right">
-                        <Link
-                          to={`/admin/orders?highlight=${ord.order_number}`}
-                          className="text-[#3A1042] hover:underline font-semibold"
-                        >
-                          Manage
-                        </Link>
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <a
+                            href={buildClientWhatsappUrl(ord)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#25D366] text-white rounded-xs text-[10px] font-bold hover:bg-[#1ebe5d]"
+                            title={`Send WhatsApp confirmation to client (${ord.customer_phone})`}
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            <span>Client</span>
+                          </a>
+                          <a
+                            href={buildStoreWhatsappUrl(ord)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#161F33] text-white rounded-xs text-[10px] font-bold hover:bg-[#3A1042]"
+                            title="Send order copy to Store WhatsApp 03130888048"
+                          >
+                            <MessageCircle className="w-3 h-3 text-[#25D366]" />
+                            <span>03130888048</span>
+                          </a>
+                          <Link
+                            to={`/admin/orders?highlight=${ord.order_number}`}
+                            className="px-2 py-1 border border-[#3A1042] text-[#3A1042] hover:bg-[#3A1042] hover:text-white rounded-xs text-[10px] font-semibold transition-colors"
+                          >
+                            Manage
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -340,8 +434,8 @@ export const AdminDashboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Top Selling Products & Stock Overview (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
+        {/* Top Selling Products & Stock Overview (4 cols) */}
+        <div className="lg:col-span-4 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
             <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
               Products by Sales & Stock

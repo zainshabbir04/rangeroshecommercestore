@@ -429,8 +429,33 @@ function getSettings(): StoreSettings {
   return s;
 }
 
+const ALL_ORDER_STORAGE_KEYS = [
+  'rer_fallback_orders_v6',
+  'rer_fallback_orders_v5',
+  'rer_fallback_orders_v4',
+  'rer_fallback_orders_v3',
+  'rer_fallback_orders_v2',
+  'rer_fallback_orders_v1',
+];
+
 function getOrders(): Order[] {
-  return loadFromStorage<Order[]>(STORAGE_KEYS.ORDERS, []);
+  const seen = new Set<string>();
+  const merged: Order[] = [];
+  for (const key of ALL_ORDER_STORAGE_KEYS) {
+    const list = loadFromStorage<Order[]>(key, []);
+    if (Array.isArray(list)) {
+      for (const ord of list) {
+        if (ord && ord.order_number && !seen.has(ord.order_number)) {
+          seen.add(ord.order_number);
+          merged.push(ord);
+        }
+      }
+    }
+  }
+  if (merged.length > 0) {
+    saveToStorage(STORAGE_KEYS.ORDERS, merged);
+  }
+  return merged;
 }
 
 function getTransactions(): InventoryTransaction[] {
@@ -641,6 +666,20 @@ export const fallbackStore = {
     return { order: newOrder };
   },
 
+  syncOrder(order: Order) {
+    if (!order || !order.order_number) return;
+    const orders = getOrders();
+    const existingIdx = orders.findIndex(
+      (o) => o.order_number === order.order_number || o.id === order.id
+    );
+    if (existingIdx >= 0) {
+      orders[existingIdx] = order;
+    } else {
+      orders.unshift(order);
+    }
+    saveToStorage(STORAGE_KEYS.ORDERS, orders);
+  },
+
   lookupOrder(orderNumber: string) {
     const orders = getOrders();
     const order = orders.find(
@@ -709,7 +748,7 @@ export const fallbackStore = {
         (a, b) => b.inventory.sold_quantity - a.inventory.sold_quantity
       ),
       daily_analytics: [],
-      recent_orders: orders.slice(0, 8),
+      recent_orders: orders.slice(0, 15),
     };
   },
 
