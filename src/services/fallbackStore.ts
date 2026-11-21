@@ -532,24 +532,8 @@ export const fallbackStore = {
       const lineTotal = prod.effective_price * qty;
       subtotal += lineTotal;
 
-      const prevAvail = prod.inventory.available_stock;
-      if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
-        prod.inventory.size_stock[selSize] = Math.max(
-          0,
-          Number(prod.inventory.size_stock[selSize] || 0) - qty
-        );
-        prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
-          (s, n) => s + Number(n || 0),
-          0
-        );
-      } else {
-        prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
-      }
-      prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
-      prod.inventory.stock_status = computeStockStatus(
-        prod.inventory.available_stock,
-        prod.inventory.low_stock_threshold
-      );
+      const prevRes = prod.inventory.reserved_stock || 0;
+      prod.inventory.reserved_stock = prevRes + qty;
 
       txs.unshift({
         id: txs.length + 1,
@@ -558,13 +542,13 @@ export const fallbackStore = {
         product_sku: prod.sku,
         order_id: orders.length + 1,
         order_number: `RER-${1001 + orders.length}`,
-        change_type: 'order_confirmed',
-        quantity_delta: -qty,
-        previous_available: prevAvail,
+        change_type: 'order_reserved',
+        quantity_delta: qty,
+        previous_available: prod.inventory.available_stock,
         new_available: prod.inventory.available_stock,
-        previous_reserved: prod.inventory.reserved_stock,
+        previous_reserved: prevRes,
         new_reserved: prod.inventory.reserved_stock,
-        note: `Order #RER-${1001 + orders.length} auto-confirmed — deducted ${qty} unit(s) (${selSize})`,
+        note: `Reserved ${qty} unit(s) (${selSize}) for Pending Order #RER-${1001 + orders.length}`,
         performed_by: payload.customer_name || 'Customer',
         created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
       });
@@ -589,32 +573,51 @@ export const fallbackStore = {
     const totalAmount = subtotal + shipping;
     const orderNumber = `RER-${1001 + orders.length}`;
 
-    const itemsLines = resolvedItems
-      .map(
-        (i: any, idx: number) =>
-          `${idx + 1}. *${i.product_name}* (${i.selected_size}) x${i.quantity} — PKR ${i.line_total.toLocaleString('en-PK')}`
-      )
+    const shortItems = resolvedItems
+      .map((i: any) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size})`)
       .join('\n');
 
-    const msg = [
-      `Assalam-o-Alaikum *${payload.customer_name}*! ✨`,
-      `Great news from *${settings.store_name}*! Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+    const shortStoreMsg = [
+      `Assalam-o-Alaikum *${settings.store_name}*!`,
+      `I placed Order *#${orderNumber}*`,
+      shortItems,
+      `Total: *PKR ${totalAmount.toLocaleString('en-PK')}* (${payload.payment_method || 'Cash on Delivery (COD)'})`,
+      `Name: ${payload.customer_name}`,
+      `City: ${payload.city}`,
+      `Please confirm my order.`,
+    ].join('\n');
+
+    const detailedItemsLines = resolvedItems
+      .map(
+        (i: any, idx: number) =>
+          `${idx + 1}. *${i.product_name}* (${i.selected_size}${i.selected_color ? ` • ${i.selected_color}` : ''})\n   Qty: ${i.quantity} × PKR ${i.unit_price.toLocaleString('en-PK')} = *PKR ${i.line_total.toLocaleString('en-PK')}*`
+      )
+      .join('\n\n');
+
+    const detailedClientMsg = [
+      `Assalam-o-Alaikum *${payload.customer_name}*!`,
+      ``,
+      `Great news from *${settings.store_name}*! ✨`,
+      `Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
       ``,
       `━━━━━━━━━━━━━━━━━━━━`,
       `🛍️ *ORDER CONFIRMATION: #${orderNumber}*`,
-      `📌 *Order Status:* Confirmed ✅`,
-      `📞 *Confirmation From Store WhatsApp:* 03130888048`,
-      `📲 *Client WhatsApp:* ${payload.customer_phone}`,
-      `💳 *Payment Method:* ${payload.payment_method || 'Cash on Delivery (COD)'}`,
+      `📌 *Status:* Confirmed ✅`,
+      `💳 *Payment:* ${payload.payment_method || 'Cash on Delivery (COD)'}`,
       `━━━━━━━━━━━━━━━━━━━━`,
       ``,
-      `👗 *ORDERED ITEMS:*`,
-      itemsLines,
+      `👗 *PRODUCT & ORDER DETAILS*`,
+      detailedItemsLines,
       ``,
       `• Subtotal: PKR ${subtotal.toLocaleString('en-PK')}`,
-      `• Shipping: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
-      `💰 *Total Payable:* PKR ${totalAmount.toLocaleString('en-PK')}`,
-      `📍 *Delivery Address:* ${payload.shipping_address}, ${payload.city}`,
+      `• Delivery: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
+      `💰 *Total Payable: PKR ${totalAmount.toLocaleString('en-PK')}*`,
+      ``,
+      `📍 *DELIVERY DETAILS*`,
+      `• Name: ${payload.customer_name}`,
+      `• Phone: ${payload.customer_phone}`,
+      `• Address: ${payload.shipping_address}, ${payload.city}`,
+      ...(payload.order_notes ? [`• Notes: ${payload.order_notes}`] : []),
       ``,
       `Thank you for shopping with *${settings.store_name}*!`,
       `📞 Official WhatsApp: 03130888048`,
@@ -628,8 +631,8 @@ export const fallbackStore = {
       cleanCustomerPhone = '92' + cleanCustomerPhone;
     }
 
-    const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(msg)}`;
-    const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(msg)}`;
+    const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(detailedClientMsg)}`;
+    const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(shortStoreMsg)}`;
 
     const newOrder: Order = {
       id: orders.length + 1,
@@ -644,14 +647,14 @@ export const fallbackStore = {
       subtotal,
       shipping_charges: shipping,
       total_amount: totalAmount,
-      status: 'Confirmed',
-      stock_deducted: true,
-      stock_reserved: false,
-      whatsapp_message: msg,
-      whatsapp_url: customerWhatsappUrl,
-      customer_whatsapp_message: msg,
+      status: 'Pending',
+      stock_deducted: false,
+      stock_reserved: true,
+      whatsapp_message: shortStoreMsg,
+      whatsapp_url: storeWhatsappUrl,
+      customer_whatsapp_message: detailedClientMsg,
       customer_whatsapp_url: customerWhatsappUrl,
-      store_whatsapp_message: msg,
+      store_whatsapp_message: shortStoreMsg,
       store_whatsapp_url: storeWhatsappUrl,
       store_whatsapp: '03130888048',
       items: resolvedItems,

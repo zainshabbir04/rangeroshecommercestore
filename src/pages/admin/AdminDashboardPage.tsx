@@ -6,10 +6,7 @@ import {
   Clock,
   CheckCircle2,
   TrendingUp,
-  AlertTriangle,
-  XCircle,
   ArrowRight,
-  Calendar,
   RefreshCw,
   MessageCircle,
   MapPin,
@@ -17,44 +14,72 @@ import {
 import { DashboardData, Order } from '../../types';
 import { api, formatPrice } from '../../services/api';
 
+function buildDetailedClientWhatsappMessage(ord: Order): string {
+  if (ord.customer_whatsapp_message && ord.customer_whatsapp_message.includes('ORDER CONFIRMATION')) {
+    return ord.customer_whatsapp_message;
+  }
+  const itemLines = (ord.items || [])
+    .map(
+      (it, idx) =>
+        `${idx + 1}. *${it.product_name}* (${it.selected_size || 'Small'}${it.selected_color ? ` • ${it.selected_color}` : ''})\n   Qty: ${it.quantity} × PKR ${Number(it.unit_price || 0).toLocaleString('en-PK')} = *PKR ${Number(it.line_total || 0).toLocaleString('en-PK')}*`
+    )
+    .join('\n\n');
+
+  return [
+    `Assalam-o-Alaikum *${ord.customer_name}*!`,
+    ``,
+    `Great news from *Rang e Rosh*! ✨`,
+    `Your order *#${ord.order_number}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🛍️ *ORDER CONFIRMATION: #${ord.order_number}*`,
+    `📌 *Status:* Confirmed ✅`,
+    `💳 *Payment:* ${ord.payment_method || 'Cash on Delivery (COD)'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    ``,
+    `👗 *PRODUCT & ORDER DETAILS*`,
+    itemLines,
+    ``,
+    `• Subtotal: PKR ${Number(ord.subtotal || ord.total_amount || 0).toLocaleString('en-PK')}`,
+    `• Delivery: ${Number(ord.shipping_charges || 0) === 0 ? 'FREE' : `PKR ${Number(ord.shipping_charges || 0).toLocaleString('en-PK')}`}`,
+    `💰 *Total Payable: PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}*`,
+    ``,
+    `📍 *DELIVERY DETAILS*`,
+    `• Name: ${ord.customer_name}`,
+    `• Phone: ${ord.customer_phone}`,
+    `• Address: ${ord.shipping_address}, ${ord.city}`,
+    ...(ord.order_notes ? [`• Notes: ${ord.order_notes}`] : []),
+    ``,
+    `Thank you for shopping with *Rang e Rosh*!`,
+    `📞 Official WhatsApp: 03130888048`,
+  ].join('\n');
+}
+
 function buildClientWhatsappUrl(ord: Order): string {
-  if (ord.customer_whatsapp_url) return ord.customer_whatsapp_url;
   let clean = String(ord.customer_phone || '').replace(/\D/g, '');
   if (clean.startsWith('00')) clean = clean.slice(2);
   else if (clean.startsWith('0') && clean.length === 11) clean = '92' + clean.slice(1);
   else if (clean.length === 10 && clean.startsWith('3')) clean = '92' + clean;
-  const msg =
-    ord.customer_whatsapp_message ||
-    ord.whatsapp_message ||
-    `Assalam-o-Alaikum ${ord.customer_name}! Your Rang e Rosh order #${ord.order_number} (PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}) is CONFIRMED ✅ from 03130888048.`;
+  const msg = buildDetailedClientWhatsappMessage(ord);
   return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
-}
-
-function buildStoreWhatsappUrl(ord: Order): string {
-  if (ord.store_whatsapp_url) return ord.store_whatsapp_url;
-  const msg =
-    ord.store_whatsapp_message ||
-    ord.whatsapp_message ||
-    `Order #${ord.order_number} Confirmed ✅ | Client: ${ord.customer_name} (${ord.customer_phone}) | Total: PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}`;
-  return `https://wa.me/923130888048?text=${encodeURIComponent(msg)}`;
 }
 
 export const AdminDashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [range, setRange] = useState<'all' | '7d' | '30d' | '90d'>('all');
   const [loading, setLoading] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.getDashboard(range);
+      const res = await api.getDashboard('all');
       setData(res);
     } catch {
       // handled gracefully
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, []);
 
   useEffect(() => {
     loadDashboard();
@@ -74,13 +99,30 @@ export const AdminDashboardPage: React.FC = () => {
     };
   }, [loadDashboard]);
 
+  const handleConfirmAndSendWhatsApp = async (ord: Order) => {
+    const waUrl = buildClientWhatsappUrl(ord);
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+
+    if (ord.status !== 'Confirmed') {
+      setConfirmingId(ord.id);
+      try {
+        await api.updateOrderStatus(ord.id, 'Confirmed');
+        await loadDashboard();
+      } catch {
+        // handled
+      } finally {
+        setConfirmingId(null);
+      }
+    }
+  };
+
   if (loading && !data) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+        {[1, 2, 3, 4].map((n) => (
           <div
             key={n}
-            className="h-32 bg-white border border-[#E5D9C5] animate-pulse rounded-xs"
+            className="h-28 bg-white border border-[#E5D9C5] animate-pulse rounded-xs"
           />
         ))}
       </div>
@@ -100,81 +142,42 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Top Toolbar & Date Range Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-[#E5D9C5] p-5 rounded-xs">
+    <div className="space-y-6">
+      {/* Clean Top Header */}
+      <div className="flex items-center justify-between gap-4 bg-white border border-[#E5D9C5] p-5 rounded-xs">
         <div>
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8C2D56]">
-            Rang e Rosh Executive Summary
+            Rang e Rosh Admin
           </span>
           <h2 className="font-serif-editorial text-3xl font-bold text-[#161F33]">
-            Dashboard Overview & Analytics
+            Dashboard &amp; Order Confirmation
           </h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#E5D9C5] px-3 py-1.5 rounded-xs text-xs">
-            <Calendar className="w-3.5 h-3.5 text-[#B8862D]" />
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value as any)}
-              className="bg-transparent font-semibold text-[#161F33] focus:outline-none cursor-pointer"
-              aria-label="Filter analytics by date range"
-            >
-              <option value="all">All Time</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={loadDashboard}
-            className="p-2 bg-[#FAF6F0] border border-[#E5D9C5] hover:border-[#3A1042] rounded-xs text-[#161F33] cursor-pointer"
-            title="Refresh data"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={loadDashboard}
+          className="px-3.5 py-2 bg-[#FAF6F0] border border-[#E5D9C5] hover:border-[#3A1042] rounded-xs text-xs font-semibold text-[#161F33] flex items-center gap-1.5 cursor-pointer"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      {/* 7 Required Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Total Sales */}
-        <div className="bg-gradient-to-br from-[#3A1042] to-[#161F33] text-white p-5 rounded-xs border border-[#B8862D] shadow-sm sm:col-span-2 lg:col-span-1">
+      {/* 4 Essential Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-[#3A1042] to-[#161F33] text-white p-5 rounded-xs border border-[#B8862D] shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-[#D8B572] font-semibold">
-              Total Confirmed Sales
+              Confirmed Sales
             </span>
-            <TrendingUp className="w-5 h-5 text-[#D8B572]" />
+            <TrendingUp className="w-4 h-4 text-[#D8B572]" />
           </div>
-          <p className="font-serif-editorial text-3xl font-bold mt-2">
+          <p className="font-serif-editorial text-2xl sm:text-3xl font-bold mt-2">
             {formatPrice(summary.total_sales)}
-          </p>
-          <p className="text-[11px] text-white/70 mt-1">
-            + {formatPrice(summary.pending_sales)} in Pending orders
           </p>
         </div>
 
-        {/* 2. Total Products */}
-        <Link
-          to="/admin/products"
-          className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-[#3A1042] transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-[#161F33]/65 font-semibold">
-              Total Products
-            </span>
-            <Package className="w-5 h-5 text-[#3A1042]" />
-          </div>
-          <p className="font-serif-editorial text-3xl font-bold text-[#161F33] mt-2">
-            {summary.total_products}
-          </p>
-          <p className="text-[11px] text-[#8C2D56] mt-1 font-medium">Manage Pret Catalog →</p>
-        </Link>
-
-        {/* 3. Total Orders */}
         <Link
           to="/admin/orders"
           className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-[#3A1042] transition-colors"
@@ -183,15 +186,13 @@ export const AdminDashboardPage: React.FC = () => {
             <span className="text-xs uppercase tracking-wider text-[#161F33]/65 font-semibold">
               Total Orders
             </span>
-            <ShoppingBag className="w-5 h-5 text-[#3A1042]" />
+            <ShoppingBag className="w-4 h-4 text-[#3A1042]" />
           </div>
-          <p className="font-serif-editorial text-3xl font-bold text-[#161F33] mt-2">
+          <p className="font-serif-editorial text-2xl sm:text-3xl font-bold text-[#161F33] mt-2">
             {summary.total_orders}
           </p>
-          <p className="text-[11px] text-[#161F33]/60 mt-1">All recorded customer orders</p>
         </Link>
 
-        {/* 4. Pending Orders */}
         <Link
           to="/admin/orders?status=Pending"
           className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-[#B8862D] transition-colors"
@@ -200,319 +201,154 @@ export const AdminDashboardPage: React.FC = () => {
             <span className="text-xs uppercase tracking-wider text-[#B8862D] font-semibold">
               Pending Orders
             </span>
-            <Clock className="w-5 h-5 text-[#B8862D]" />
+            <Clock className="w-4 h-4 text-[#B8862D]" />
           </div>
-          <p className="font-serif-editorial text-3xl font-bold text-[#B8862D] mt-2">
+          <p className="font-serif-editorial text-2xl sm:text-3xl font-bold text-[#B8862D] mt-2">
             {summary.pending_orders}
           </p>
-          <p className="text-[11px] text-[#161F33]/60 mt-1">Awaiting WhatsApp confirmation</p>
         </Link>
 
-        {/* 5. Confirmed Orders */}
         <Link
-          to="/admin/orders?status=Confirmed"
+          to="/admin/products"
           className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-[#2E6F73] transition-colors"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-[#2E6F73] font-semibold">
-              Confirmed Orders
+              Confirmed / Products
             </span>
-            <CheckCircle2 className="w-5 h-5 text-[#2E6F73]" />
+            <Package className="w-4 h-4 text-[#2E6F73]" />
           </div>
-          <p className="font-serif-editorial text-3xl font-bold text-[#2E6F73] mt-2">
-            {summary.confirmed_orders}
+          <p className="font-serif-editorial text-2xl sm:text-3xl font-bold text-[#2E6F73] mt-2">
+            {summary.confirmed_orders} / {summary.total_products}
           </p>
-          <p className="text-[11px] text-[#161F33]/60 mt-1">
-            Confirmed / Processing / Shipped / Delivered
-          </p>
-        </Link>
-
-        {/* 6. Low Stock Products */}
-        <Link
-          to="/admin/inventory"
-          className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-[#B8862D] transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-[#B8862D] font-semibold">
-              Low Stock Products
-            </span>
-            <AlertTriangle className="w-5 h-5 text-[#B8862D]" />
-          </div>
-          <p className="font-serif-editorial text-3xl font-bold text-[#B8862D] mt-2">
-            {summary.low_stock_count}
-          </p>
-          <p className="text-[11px] text-[#161F33]/60 mt-1">At or below low-stock threshold</p>
-        </Link>
-
-        {/* 7. Out of Stock Products */}
-        <Link
-          to="/admin/inventory"
-          className="bg-white p-5 rounded-xs border border-[#E5D9C5] hover:border-red-500 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-red-700 font-semibold">
-              Out of Stock Products
-            </span>
-            <XCircle className="w-5 h-5 text-red-600" />
-          </div>
-          <p className="font-serif-editorial text-3xl font-bold text-red-700 mt-2">
-            {summary.out_of_stock_count}
-          </p>
-          <p className="text-[11px] text-[#161F33]/60 mt-1">Requires immediate restocking</p>
         </Link>
       </div>
 
-      {/* Low Stock / Out of Stock Alert Banner if any exist */}
-      {data &&
-        (data.low_stock_products.length > 0 || data.out_of_stock_products.length > 0) && (
-          <div className="bg-[#B8862D]/10 border border-[#B8862D] rounded-xs p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-bold text-[#3A1042]">
-                <AlertTriangle className="w-4 h-4 text-[#B8862D]" />
-                <span>Inventory Attention Required</span>
-              </div>
-              <Link
-                to="/admin/inventory"
-                className="text-xs font-semibold uppercase tracking-wider text-[#3A1042] hover:underline"
-              >
-                Manage Stock →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[...data.out_of_stock_products, ...data.low_stock_products].map((prod) => (
-                <div
-                  key={prod.id}
-                  className="bg-white p-3 rounded-xs border border-[#E5D9C5] flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <strong className="text-[#161F33] block">{prod.name}</strong>
-                    <span className="text-[#161F33]/60 font-mono">{prod.sku}</span>
-                  </div>
-                  <span
-                    className={`px-2.5 py-1 font-semibold rounded-xs ${
-                      prod.inventory.available_stock <= 0
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-[#B8862D]/20 text-[#B8862D]'
-                    }`}
-                  >
-                    {prod.inventory.available_stock} Left
-                  </span>
-                </div>
-              ))}
-            </div>
+      {/* Full-Width Customer Orders & One-Click Confirm Table */}
+      <div className="bg-white border border-[#E5D9C5] rounded-xs p-5 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
+          <div>
+            <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
+              Incoming Customer Orders ({data?.recent_orders.length || 0})
+            </h3>
+            <p className="text-xs text-[#161F33]/65 mt-0.5">
+              Click <strong>Confirm &amp; Send Detailed WhatsApp</strong> to confirm the order and send full product details to the client&apos;s WhatsApp.
+            </p>
+          </div>
+          <Link
+            to="/admin/orders"
+            className="text-xs font-semibold uppercase tracking-wider text-[#3A1042] hover:text-[#8C2D56] flex items-center gap-1"
+          >
+            <span>All Orders</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {!data || data.recent_orders.length === 0 ? (
+          <div className="py-12 text-center text-xs text-[#161F33]/60">
+            No customer orders recorded yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[#E5D9C5] text-[#161F33]/65 uppercase tracking-wider">
+                  <th className="py-2.5 pr-3">Order ID</th>
+                  <th className="py-2.5 px-3">Client &amp; WhatsApp</th>
+                  <th className="py-2.5 px-3">Products &amp; Delivery</th>
+                  <th className="py-2.5 px-3">Total</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 pl-3 text-right">Confirm &amp; Send Detail Message</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E5D9C5]/60">
+                {data.recent_orders.map((ord) => (
+                  <tr key={ord.id || ord.order_number} className="hover:bg-[#FAF6F0]/60 align-top">
+                    <td className="py-3.5 pr-3 font-mono font-bold text-[#3A1042]">
+                      #{ord.order_number}
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <div className="font-semibold text-[#161F33]">{ord.customer_name}</div>
+                      <div className="text-[11px] text-[#2E6F73] font-mono font-semibold">
+                        {ord.customer_phone}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <div className="space-y-0.5">
+                        {(ord.items || []).map((it, idx) => (
+                          <div key={idx} className="text-[11px] font-medium text-[#161F33]">
+                            {it.quantity}× <strong>{it.product_name}</strong>{' '}
+                            <span className="text-[#8C2D56]">({it.selected_size || 'Small'})</span>
+                          </div>
+                        ))}
+                      </div>
+                      {ord.city && (
+                        <div className="flex items-center gap-1 text-[10px] text-[#161F33]/65 mt-1">
+                          <MapPin className="w-3 h-3 text-[#B8862D] shrink-0" />
+                          <span className="truncate max-w-[220px]">
+                            {ord.city}
+                            {ord.shipping_address ? ` — ${ord.shipping_address}` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-3 font-bold text-[#3A1042] whitespace-nowrap">
+                      {formatPrice(ord.total_amount)}
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`px-2.5 py-1 rounded-xs text-[10px] font-semibold uppercase tracking-wider ${
+                          ord.status === 'Pending'
+                            ? 'bg-[#B8862D]/20 text-[#B8862D]'
+                            : ord.status === 'Cancelled'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-[#2E6F73]/15 text-[#2E6F73]'
+                        }`}
+                      >
+                        {ord.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 pl-3 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={confirmingId === ord.id}
+                          onClick={() => handleConfirmAndSendWhatsApp(ord)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xs text-[11px] font-bold text-white cursor-pointer shadow-xs transition-colors ${
+                            ord.status === 'Pending'
+                              ? 'bg-[#2E6F73] hover:bg-[#23585B]'
+                              : 'bg-[#25D366] hover:bg-[#1ebe5d]'
+                          }`}
+                          title={`Confirm order & send detailed product message to ${ord.customer_phone}`}
+                        >
+                          {ord.status === 'Pending' ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Confirm &amp; WhatsApp Client</span>
+                            </>
+                          ) : (
+                            <>
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Send Detail WhatsApp</span>
+                            </>
+                          )}
+                        </button>
+
+                        <Link
+                          to={`/admin/orders?highlight=${ord.order_number}`}
+                          className="px-2.5 py-1.5 border border-[#3A1042] text-[#3A1042] hover:bg-[#3A1042] hover:text-white rounded-xs text-[11px] font-semibold transition-colors"
+                        >
+                          Details
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
-      {/* Main Analytics & Top Products Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Recent Incoming Orders (8 cols) */}
-        <div className="lg:col-span-8 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
-            <div>
-              <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
-                Customer Orders on Dashboard ({data?.recent_orders.length || 0})
-              </h3>
-              <p className="text-[11px] text-[#161F33]/65 mt-0.5">
-                Auto-confirmed incoming orders with direct WhatsApp links to Client &amp; 03130888048
-              </p>
-            </div>
-            <Link
-              to="/admin/orders"
-              className="text-xs font-semibold uppercase tracking-wider text-[#3A1042] hover:text-[#8C2D56] flex items-center gap-1"
-            >
-              <span>All Orders</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {!data || data.recent_orders.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#161F33]/60">
-              No customer orders recorded for this period yet.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-[#E5D9C5] text-[#161F33]/60 uppercase tracking-wider">
-                    <th className="py-2.5 pr-3">Order ID</th>
-                    <th className="py-2.5 px-3">Customer &amp; WhatsApp</th>
-                    <th className="py-2.5 px-3">Ordered Suits &amp; City</th>
-                    <th className="py-2.5 px-3">Total</th>
-                    <th className="py-2.5 px-3">Status</th>
-                    <th className="py-2.5 pl-3 text-right">WhatsApp &amp; Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5D9C5]/60">
-                  {data.recent_orders.map((ord) => (
-                    <tr key={ord.id || ord.order_number} className="hover:bg-[#FAF6F0]/60 align-top">
-                      <td className="py-3 pr-3">
-                        <div className="font-mono font-bold text-[#3A1042]">
-                          #{ord.order_number}
-                        </div>
-                        {ord.created_at && (
-                          <div className="text-[10px] text-[#161F33]/55 mt-0.5">
-                            {String(ord.created_at).slice(0, 16)}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-[#161F33]">{ord.customer_name}</div>
-                        <div className="text-[11px] text-[#161F33]/75 font-mono">
-                          {ord.customer_phone}
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="space-y-0.5">
-                          {(ord.items || []).map((it, idx) => (
-                            <div key={idx} className="text-[11px] font-medium text-[#161F33]">
-                              {it.quantity}× {it.product_name}{' '}
-                              <span className="text-[#8C2D56]">({it.selected_size || 'Small'})</span>
-                            </div>
-                          ))}
-                        </div>
-                        {ord.city && (
-                          <div className="flex items-center gap-1 text-[10px] text-[#161F33]/60 mt-1">
-                            <MapPin className="w-3 h-3 text-[#B8862D] shrink-0" />
-                            <span className="truncate max-w-[180px]">
-                              {ord.city}
-                              {ord.shipping_address ? ` — ${ord.shipping_address}` : ''}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-[#161F33] whitespace-nowrap">
-                        {formatPrice(ord.total_amount)}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-xs text-[10px] font-semibold uppercase tracking-wider ${
-                            ord.status === 'Pending'
-                              ? 'bg-[#B8862D]/20 text-[#B8862D]'
-                              : ord.status === 'Cancelled'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-[#2E6F73]/15 text-[#2E6F73]'
-                          }`}
-                        >
-                          {ord.status}
-                        </span>
-                      </td>
-                      <td className="py-3 pl-3 text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-1.5">
-                          <a
-                            href={buildClientWhatsappUrl(ord)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#25D366] text-white rounded-xs text-[10px] font-bold hover:bg-[#1ebe5d]"
-                            title={`Send WhatsApp confirmation to client (${ord.customer_phone})`}
-                          >
-                            <MessageCircle className="w-3 h-3" />
-                            <span>Client</span>
-                          </a>
-                          <a
-                            href={buildStoreWhatsappUrl(ord)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#161F33] text-white rounded-xs text-[10px] font-bold hover:bg-[#3A1042]"
-                            title="Send order copy to Store WhatsApp 03130888048"
-                          >
-                            <MessageCircle className="w-3 h-3 text-[#25D366]" />
-                            <span>03130888048</span>
-                          </a>
-                          <Link
-                            to={`/admin/orders?highlight=${ord.order_number}`}
-                            className="px-2 py-1 border border-[#3A1042] text-[#3A1042] hover:bg-[#3A1042] hover:text-white rounded-xs text-[10px] font-semibold transition-colors"
-                          >
-                            Manage
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Top Selling Products & Stock Overview (4 cols) */}
-        <div className="lg:col-span-4 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
-            <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33]">
-              Products by Sales & Stock
-            </h3>
-            <Link
-              to="/admin/inventory"
-              className="text-xs font-semibold uppercase tracking-wider text-[#3A1042] hover:text-[#8C2D56]"
-            >
-              Inventory →
-            </Link>
-          </div>
-
-          <div className="divide-y divide-[#E5D9C5]">
-            {data?.top_selling_products.map((prod) => (
-              <div key={prod.id} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
-                <img
-                  src={prod.primary_image}
-                  alt={prod.name}
-                  className="w-11 h-14 rounded-xs object-cover object-top border border-[#E5D9C5] shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-serif-editorial text-lg font-bold text-[#161F33] truncate">
-                      {prod.name}
-                    </h4>
-                    <span className="text-xs font-bold text-[#3A1042]">
-                      {formatPrice(prod.effective_price)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-[#161F33]/70 mt-0.5">
-                    <span>
-                      Sold: <strong className="text-[#2E6F73]">{prod.inventory.sold_quantity}</strong>{' '}
-                      | Reserved: <strong>{prod.inventory.reserved_stock}</strong>
-                    </span>
-                    <span
-                      className={`font-semibold ${
-                        prod.inventory.available_stock <= 0
-                          ? 'text-red-600'
-                          : prod.inventory.stock_status === 'Low Stock'
-                            ? 'text-[#B8862D]'
-                            : 'text-[#2E6F73]'
-                      }`}
-                    >
-                      {prod.inventory.available_stock} in stock
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
-
-      {/* Daily Revenue & Order Analytics Breakdown */}
-      {data && data.daily_analytics.length > 0 && (
-        <div className="bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4">
-          <h3 className="font-serif-editorial text-2xl font-bold text-[#161F33] border-b border-[#E5D9C5] pb-3">
-            Daily Order & Revenue Analytics
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {data.daily_analytics.map((day) => (
-              <div
-                key={day.date}
-                className="p-4 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs space-y-1"
-              >
-                <span className="text-xs font-mono text-[#161F33]/60">{day.date}</span>
-                <p className="font-serif-editorial text-2xl font-bold text-[#3A1042]">
-                  {formatPrice(day.revenue)}
-                </p>
-                <p className="text-xs text-[#161F33]/75">
-                  {day.order_count} {day.order_count === 1 ? 'order' : 'orders'} placed
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

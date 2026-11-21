@@ -102,17 +102,28 @@ export const CheckoutPage: React.FC = () => {
       clearCart();
       await refreshStorefront();
 
-      // Open WhatsApp with the prefilled Order Confirmation message to Store WhatsApp (03130888048)
+      // Open client's WhatsApp with a short order message addressed to Rang e Rosh (03130888048)
+      const shortOrderMsg =
+        createdOrder.store_whatsapp_message ||
+        [
+          `Assalam-o-Alaikum *Rang e Rosh*!`,
+          `I placed Order *#${createdOrder.order_number}*`,
+          ...(createdOrder.items || []).map(
+            (i) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size || 'Standard'})`
+          ),
+          `Total: *PKR ${Number(createdOrder.total_amount || 0).toLocaleString('en-PK')}* (${createdOrder.payment_method})`,
+          `Name: ${createdOrder.customer_name}`,
+          `City: ${createdOrder.city}`,
+          `Please confirm my order.`,
+        ].join('\n');
+
       const storeWhatsappUrl =
         createdOrder.store_whatsapp_url ||
-        `https://wa.me/923130888048?text=${encodeURIComponent(
-          createdOrder.customer_whatsapp_message || createdOrder.whatsapp_message || ''
-        )}`;
+        `https://wa.me/923130888048?text=${encodeURIComponent(shortOrderMsg)}`;
       if (storeWhatsappUrl) {
         window.open(storeWhatsappUrl, '_blank', 'noopener,noreferrer');
       }
 
-      // Navigate to the Order Confirmation page where both Store (03130888048) and Client WhatsApp buttons are available
       navigate(`/order-confirmation/${createdOrder.order_number}`, {
         state: { order: createdOrder },
       });
@@ -364,15 +375,11 @@ export const CheckoutPage: React.FC = () => {
           <div className="p-4 bg-[#2E6F73]/10 border border-[#2E6F73]/30 rounded-2xl space-y-1.5 text-xs text-[#161F33]">
             <div className="flex items-center gap-2 font-semibold text-[#2E6F73]">
               <MessageCircle className="w-4 h-4 shrink-0" />
-              <span>WhatsApp Order Confirmation to Client</span>
+              <span>Instant WhatsApp Order Notification</span>
             </div>
             <p className="text-[#161F33]/80 leading-relaxed">
-              Clicking <strong>Place Order</strong> saves the order with a unique Order ID and
-              automatically opens your WhatsApp with a pre-filled{' '}
-              <strong>Rang e Rosh Order Confirmation Message</strong> addressed directly to the
-              client&apos;s WhatsApp number{' '}
-              {customerPhone.trim() ? <strong>({customerPhone.trim()})</strong> : ''} so you can
-              review and press Send.
+              Clicking <strong>Place Order</strong> saves your order and opens your WhatsApp with a
+              short order message to our official Rang e Rosh WhatsApp (<strong>03130888048</strong>).
             </p>
           </div>
 
@@ -384,9 +391,7 @@ export const CheckoutPage: React.FC = () => {
           >
             <MessageCircle className="w-4 h-4 text-[#D8B572] shrink-0" />
             <span>
-              {submitting
-                ? 'Saving Order & Opening WhatsApp...'
-                : 'Place Order & Send WhatsApp to Client'}
+              {submitting ? 'Placing Order...' : 'Place Order & Send WhatsApp'}
             </span>
           </button>
 

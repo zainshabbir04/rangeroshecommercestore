@@ -28,6 +28,47 @@ const ORDER_STATUSES: OrderStatus[] = [
   'Cancelled',
 ];
 
+function buildDetailedClientMessage(ord: Order): string {
+  if (ord.customer_whatsapp_message && ord.customer_whatsapp_message.includes('ORDER CONFIRMATION')) {
+    return ord.customer_whatsapp_message;
+  }
+  const itemLines = (ord.items || [])
+    .map(
+      (it, idx) =>
+        `${idx + 1}. *${it.product_name}* (${it.selected_size || 'Small'}${it.selected_color ? ` • ${it.selected_color}` : ''})\n   Qty: ${it.quantity} × PKR ${Number(it.unit_price || 0).toLocaleString('en-PK')} = *PKR ${Number(it.line_total || 0).toLocaleString('en-PK')}*`
+    )
+    .join('\n\n');
+
+  return [
+    `Assalam-o-Alaikum *${ord.customer_name}*!`,
+    ``,
+    `Great news from *Rang e Rosh*! ✨`,
+    `Your order *#${ord.order_number}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🛍️ *ORDER CONFIRMATION: #${ord.order_number}*`,
+    `📌 *Status:* Confirmed ✅`,
+    `💳 *Payment:* ${ord.payment_method || 'Cash on Delivery (COD)'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    ``,
+    `👗 *PRODUCT & ORDER DETAILS*`,
+    itemLines,
+    ``,
+    `• Subtotal: PKR ${Number(ord.subtotal || ord.total_amount || 0).toLocaleString('en-PK')}`,
+    `• Delivery: ${Number(ord.shipping_charges || 0) === 0 ? 'FREE' : `PKR ${Number(ord.shipping_charges || 0).toLocaleString('en-PK')}`}`,
+    `💰 *Total Payable: PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}*`,
+    ``,
+    `📍 *DELIVERY DETAILS*`,
+    `• Name: ${ord.customer_name}`,
+    `• Phone: ${ord.customer_phone}`,
+    `• Address: ${ord.shipping_address}, ${ord.city}`,
+    ...(ord.order_notes ? [`• Notes: ${ord.order_notes}`] : []),
+    ``,
+    `Thank you for shopping with *Rang e Rosh*!`,
+    `📞 Official WhatsApp: 03130888048`,
+  ].join('\n');
+}
+
 export const AdminOrdersPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { refreshStorefront } = useStore();
@@ -90,7 +131,7 @@ export const AdminOrdersPage: React.FC = () => {
   const handleOpenOrder = (order: Order) => {
     setSelectedOrder(order);
     setStatusError(null);
-    setCustomWhatsappMsg(order.customer_whatsapp_message || '');
+    setCustomWhatsappMsg(buildDetailedClientMessage(order));
   };
 
   const handleStatusUpdate = async (
@@ -98,6 +139,13 @@ export const AdminOrdersPage: React.FC = () => {
     newStatus: OrderStatus,
     openWhatsApp = false
   ) => {
+    const existingOrd = orders.find((o) => o.id === orderId) || selectedOrder;
+    if (openWhatsApp && existingOrd) {
+      const msg = buildDetailedClientMessage(existingOrd);
+      const url = getCustomerWhatsAppLink(existingOrd.customer_phone, msg);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
     setUpdatingStatus(true);
     setStatusError(null);
     try {
@@ -105,10 +153,7 @@ export const AdminOrdersPage: React.FC = () => {
       const updated = res.order;
       setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
       setSelectedOrder(updated);
-      setCustomWhatsappMsg(updated.customer_whatsapp_message || '');
-      if (openWhatsApp && updated.customer_whatsapp_url) {
-        window.open(updated.customer_whatsapp_url, '_blank', 'noopener,noreferrer');
-      }
+      setCustomWhatsappMsg(buildDetailedClientMessage(updated));
       await refreshStorefront();
     } catch (err: any) {
       setStatusError(err.message || 'Failed to update order status');
@@ -289,32 +334,29 @@ export const AdminOrdersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-2">
-                      {ord.status === 'Pending' && (
+                      {ord.status === 'Pending' ? (
                         <button
                           type="button"
                           onClick={() => handleStatusUpdate(ord.id, 'Confirmed', true)}
                           className="px-2.5 py-1.5 bg-[#2E6F73] hover:bg-[#23585B] text-white rounded-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
-                          title="Confirm Order, Deduct Stock & Open WhatsApp to Client"
+                          title="Confirm Order & Send Detailed Product Message to Client WhatsApp"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>Confirm & WhatsApp Client</span>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Confirm &amp; WhatsApp Client</span>
                         </button>
-                      )}
-                      {ord.customer_whatsapp_url && (
+                      ) : (
                         <a
-                          href={ord.customer_whatsapp_url}
+                          href={getCustomerWhatsAppLink(
+                            ord.customer_phone,
+                            buildDetailedClientMessage(ord)
+                          )}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={() => {
-                            if (ord.status === 'Pending') {
-                              handleStatusUpdate(ord.id, 'Confirmed', false);
-                            }
-                          }}
-                          className="px-2.5 py-1.5 border border-[#2E6F73] text-[#2E6F73] hover:bg-[#2E6F73] hover:text-white rounded-xs font-semibold inline-flex items-center gap-1"
-                          title={`Send WhatsApp confirmation from 03130888048 to ${ord.customer_phone}`}
+                          className="px-2.5 py-1.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-xs font-semibold inline-flex items-center gap-1"
+                          title={`Send Detailed WhatsApp Confirmation to ${ord.customer_phone}`}
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
+                          <span>Send Detail WhatsApp</span>
                         </a>
                       )}
                       <button
@@ -514,8 +556,8 @@ export const AdminOrdersPage: React.FC = () => {
                             <td className="py-3 px-3">
                               <div className="font-bold text-[#161F33]">{item.product_name}</div>
                               <div className="text-[11px] text-[#161F33]/65">
-                                SKU: {item.product_sku}
-                                {item.selected_size ? ` • ${item.selected_size}` : ''}
+                                {item.selected_size ? `Size: ${item.selected_size}` : ''}
+                                {item.selected_color ? ` • ${item.selected_color}` : ''}
                               </div>
                             </td>
                             <td className="py-3 px-3">{formatPrice(item.unit_price)}</td>

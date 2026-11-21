@@ -532,24 +532,28 @@ export default function handler(req, res) {
         const lineTotal = prod.effective_price * qty;
         subtotal += lineTotal;
 
-        // Deduct stock immediately as order is auto-confirmed
-        if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
-          prod.inventory.size_stock[selSize] = Math.max(
-            0,
-            Number(prod.inventory.size_stock[selSize] || 0) - qty
-          );
-          prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
-            (s, n) => s + Number(n || 0),
-            0
+        const autoConfirm = Boolean(body.auto_confirm);
+        if (autoConfirm) {
+          if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
+            prod.inventory.size_stock[selSize] = Math.max(
+              0,
+              Number(prod.inventory.size_stock[selSize] || 0) - qty
+            );
+            prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
+              (s, n) => s + Number(n || 0),
+              0
+            );
+          } else {
+            prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
+          }
+          prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
+          prod.inventory.stock_status = computeStockStatus(
+            prod.inventory.available_stock,
+            prod.inventory.low_stock_threshold
           );
         } else {
-          prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
+          prod.inventory.reserved_stock = Number(prod.inventory.reserved_stock || 0) + qty;
         }
-        prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
-        prod.inventory.stock_status = computeStockStatus(
-          prod.inventory.available_stock,
-          prod.inventory.low_stock_threshold
-        );
 
         return {
           product_id: prod.id,
@@ -571,32 +575,54 @@ export default function handler(req, res) {
           : state.settings.shipping_charges;
       const totalAmount = subtotal + shipping;
       const orderNumber = `RER-${1001 + state.orders.length}`;
-      const itemsLines = resolvedItems
-        .map(
-          (i, idx) =>
-            `${idx + 1}. *${i.product_name}* (${i.selected_size}) x${i.quantity} — PKR ${i.line_total.toLocaleString('en-PK')}`
-        )
+      const autoConfirm = Boolean(body.auto_confirm);
+      const initialStatus = autoConfirm ? 'Confirmed' : 'Pending';
+
+      const shortItems = resolvedItems
+        .map((i) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size})`)
         .join('\n');
 
-      const msg = [
-        `Assalam-o-Alaikum *${body.customer_name}*! ✨`,
-        `Great news from *${state.settings.store_name}*! Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+      const shortStoreMsg = [
+        `Assalam-o-Alaikum *${state.settings.store_name}*!`,
+        `I placed Order *#${orderNumber}*`,
+        shortItems,
+        `Total: *PKR ${totalAmount.toLocaleString('en-PK')}* (${body.payment_method || 'Cash on Delivery (COD)'})`,
+        `Name: ${body.customer_name}`,
+        `City: ${body.city}`,
+        `Please confirm my order.`,
+      ].join('\n');
+
+      const detailedItemsLines = resolvedItems
+        .map(
+          (i, idx) =>
+            `${idx + 1}. *${i.product_name}* (${i.selected_size}${i.selected_color ? ` • ${i.selected_color}` : ''})\n   Qty: ${i.quantity} × PKR ${i.unit_price.toLocaleString('en-PK')} = *PKR ${i.line_total.toLocaleString('en-PK')}*`
+        )
+        .join('\n\n');
+
+      const detailedClientMsg = [
+        `Assalam-o-Alaikum *${body.customer_name}*!`,
+        ``,
+        `Great news from *${state.settings.store_name}*! ✨`,
+        `Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
         ``,
         `━━━━━━━━━━━━━━━━━━━━`,
         `🛍️ *ORDER CONFIRMATION: #${orderNumber}*`,
-        `📌 *Order Status:* Confirmed ✅`,
-        `📞 *Confirmation From Store WhatsApp:* 03130888048`,
-        `📲 *Client WhatsApp:* ${body.customer_phone}`,
-        `💳 *Payment Method:* ${body.payment_method || 'Cash on Delivery (COD)'}`,
+        `📌 *Status:* Confirmed ✅`,
+        `💳 *Payment:* ${body.payment_method || 'Cash on Delivery (COD)'}`,
         `━━━━━━━━━━━━━━━━━━━━`,
         ``,
-        `👗 *ORDERED ITEMS:*`,
-        itemsLines,
+        `👗 *PRODUCT & ORDER DETAILS*`,
+        detailedItemsLines,
         ``,
         `• Subtotal: PKR ${subtotal.toLocaleString('en-PK')}`,
-        `• Shipping: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
-        `💰 *Total Payable:* PKR ${totalAmount.toLocaleString('en-PK')}`,
-        `📍 *Delivery Address:* ${body.shipping_address}, ${body.city}`,
+        `• Delivery: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
+        `💰 *Total Payable: PKR ${totalAmount.toLocaleString('en-PK')}*`,
+        ``,
+        `📍 *DELIVERY DETAILS*`,
+        `• Name: ${body.customer_name}`,
+        `• Phone: ${body.customer_phone}`,
+        `• Address: ${body.shipping_address}, ${body.city}`,
+        ...(body.order_notes ? [`• Notes: ${body.order_notes}`] : []),
         ``,
         `Thank you for shopping with *${state.settings.store_name}*!`,
         `📞 Official WhatsApp: 03130888048`,
@@ -610,8 +636,8 @@ export default function handler(req, res) {
         cleanCustomerPhone = '92' + cleanCustomerPhone;
       }
 
-      const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(msg)}`;
-      const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(msg)}`;
+      const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(detailedClientMsg)}`;
+      const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(shortStoreMsg)}`;
 
       const newOrder = {
         id: state.orders.length + 1,
@@ -626,14 +652,14 @@ export default function handler(req, res) {
         subtotal,
         shipping_charges: shipping,
         total_amount: totalAmount,
-        status: 'Confirmed',
-        stock_deducted: true,
-        stock_reserved: false,
-        whatsapp_message: msg,
-        whatsapp_url: customerWhatsappUrl,
-        customer_whatsapp_message: msg,
+        status: initialStatus,
+        stock_deducted: autoConfirm,
+        stock_reserved: !autoConfirm,
+        whatsapp_message: shortStoreMsg,
+        whatsapp_url: storeWhatsappUrl,
+        customer_whatsapp_message: detailedClientMsg,
         customer_whatsapp_url: customerWhatsappUrl,
-        store_whatsapp_message: msg,
+        store_whatsapp_message: shortStoreMsg,
         store_whatsapp_url: storeWhatsappUrl,
         store_whatsapp: '03130888048',
         items: resolvedItems,

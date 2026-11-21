@@ -170,7 +170,7 @@ export const api = {
       '/api/orders',
       {
         method: 'POST',
-        body: JSON.stringify({ ...payload, auto_confirm: true }),
+        body: JSON.stringify(payload),
       },
       () => {
         usedFallback = true;

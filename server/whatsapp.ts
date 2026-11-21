@@ -49,8 +49,8 @@ export function formatPKR(amount: number): string {
 }
 
 /**
- * Generates the WhatsApp Order Confirmation message sent FROM the Store Owner's WhatsApp
- * TO the Client's WhatsApp number (`customer_phone`) after an order is placed or updated.
+ * Generates the DETAILED WhatsApp Order Confirmation message sent FROM the Store Owner's WhatsApp (03130888048)
+ * TO the Client's WhatsApp number (`customer_phone`) after clicking Confirm on the Admin Dashboard.
  */
 export function buildAdminToCustomerWhatsAppMessage(
   order: OrderForWhatsApp,
@@ -59,9 +59,9 @@ export function buildAdminToCustomerWhatsAppMessage(
 ): string {
   const itemLines = order.items
     .map((item, idx) => {
-      const variantParts = [item.selected_size, item.selected_color].filter(Boolean).join(' | ');
+      const variantParts = [item.selected_size, item.selected_color].filter(Boolean).join(' • ');
       const variantSuffix = variantParts ? ` (${variantParts})` : '';
-      return `${idx + 1}. *${item.product_name}*${variantSuffix}\n   SKU: ${item.product_sku} | Qty: ${item.quantity} × ${formatPKR(item.unit_price)} = *${formatPKR(item.line_total)}*`;
+      return `${idx + 1}. *${item.product_name}*${variantSuffix}\n   Qty: ${item.quantity} × ${formatPKR(item.unit_price)} = *${formatPKR(item.line_total)}*`;
     })
     .join('\n\n');
 
@@ -83,32 +83,24 @@ export function buildAdminToCustomerWhatsAppMessage(
     ``,
     `━━━━━━━━━━━━━━━━━━━━`,
     `🛍️ *ORDER CONFIRMATION: #${order.order_number}*`,
-    `📌 *Order Status:* ${order.status === 'Pending' ? 'Confirmed' : order.status} ✅`,
-    `📞 *Confirmation From Store WhatsApp:* 03130888048`,
-    `📲 *Client WhatsApp:* ${order.customer_phone}`,
-    `💳 *Payment Method:* ${order.payment_method}`,
+    `📌 *Status:* ${order.status === 'Pending' ? 'Confirmed' : order.status} ✅`,
+    `💳 *Payment:* ${order.payment_method}`,
     `━━━━━━━━━━━━━━━━━━━━`,
     ``,
-    `👤 *CLIENT & DELIVERY DETAILS*`,
-    `• Name: ${order.customer_name}`,
-    `• Phone/WhatsApp: ${order.customer_phone}`,
-    ...(order.customer_email ? [`• Email: ${order.customer_email}`] : []),
-    `• Delivery Address: ${order.shipping_address}, ${order.city}`,
-    ...(order.order_notes ? [`• Order Notes: ${order.order_notes}`] : []),
-    ``,
-    `👗 *ORDERED ITEMS*`,
+    `👗 *PRODUCT & ORDER DETAILS*`,
     itemLines,
     ``,
-    `━━━━━━━━━━━━━━━━━━━━`,
     `• Subtotal: ${formatPKR(order.subtotal)}`,
-    `• Shipping Charges: ${order.shipping_charges === 0 ? 'FREE' : formatPKR(order.shipping_charges)}`,
-    `💰 *TOTAL AMOUNT: ${formatPKR(order.total_amount)}*`,
-    `━━━━━━━━━━━━━━━━━━━━`,
+    `• Delivery: ${order.shipping_charges === 0 ? 'FREE' : formatPKR(order.shipping_charges)}`,
+    `💰 *Total Payable: ${formatPKR(order.total_amount)}*`,
     ``,
-    `Thank you for shopping with *${storeName}*! Your parcel will be dispatched shortly.`,
+    `📍 *DELIVERY DETAILS*`,
+    `• Name: ${order.customer_name}`,
+    `• Phone: ${order.customer_phone}`,
+    `• Address: ${order.shipping_address}, ${order.city}`,
+    ...(order.order_notes ? [`• Notes: ${order.order_notes}`] : []),
     ``,
-    `Warm regards,`,
-    `*${storeName} — Ladies Stitched Suits*`,
+    `Thank you for shopping with *${storeName}*!`,
     `📞 Official WhatsApp: ${storePhone || '03130888048'}`,
   ];
 
@@ -116,47 +108,25 @@ export function buildAdminToCustomerWhatsAppMessage(
 }
 
 /**
- * Generates the WhatsApp message from Customer to Store (optional secondary link).
+ * Generates a SHORT WhatsApp message from the Client's WhatsApp to Rang e Rosh (03130888048)
+ * right after the client places an order on the website.
  */
 export function buildCustomerOrderWhatsAppMessage(
   order: OrderForWhatsApp,
   storeName = 'Rang e Rosh'
 ): string {
-  const itemLines = order.items
-    .map((item, idx) => {
-      const variantParts = [item.selected_size, item.selected_color].filter(Boolean).join(' | ');
-      const variantSuffix = variantParts ? ` (${variantParts})` : '';
-      return `${idx + 1}. *${item.product_name}*${variantSuffix}\n   SKU: ${item.product_sku} | Qty: ${item.quantity} × ${formatPKR(item.unit_price)} = *${formatPKR(item.line_total)}*`;
-    })
-    .join('\n\n');
+  const shortItems = order.items
+    .map((item) => `• ${item.quantity}x *${item.product_name}* (${item.selected_size || 'Standard'})`)
+    .join('\n');
 
   const lines = [
-    `Assalam-o-Alaikum *${storeName}*! ✨`,
-    `I have just placed an order on your website. Please find my order details below for confirmation:`,
-    ``,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `🛍️ *ORDER ID:* #${order.order_number}`,
-    `📌 *Order Status:* ${order.status}`,
-    `💳 *Payment Method:* ${order.payment_method}`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    ``,
-    `👤 *CUSTOMER DETAILS*`,
-    `• Name: ${order.customer_name}`,
-    `• Phone/WhatsApp: ${order.customer_phone}`,
-    ...(order.customer_email ? [`• Email: ${order.customer_email}`] : []),
-    `• Delivery Address: ${order.shipping_address}, ${order.city}`,
-    ...(order.order_notes ? [`• Order Notes: ${order.order_notes}`] : []),
-    ``,
-    `👗 *ORDERED ITEMS*`,
-    itemLines,
-    ``,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    `• Subtotal: ${formatPKR(order.subtotal)}`,
-    `• Shipping Charges: ${order.shipping_charges === 0 ? 'FREE' : formatPKR(order.shipping_charges)}`,
-    `💰 *GRAND TOTAL: ${formatPKR(order.total_amount)}*`,
-    `━━━━━━━━━━━━━━━━━━━━`,
-    ``,
-    `Please confirm my order. Thank you!`,
+    `Assalam-o-Alaikum *${storeName}*!`,
+    `I placed Order *#${order.order_number}*`,
+    shortItems,
+    `Total: *${formatPKR(order.total_amount)}* (${order.payment_method})`,
+    `Name: ${order.customer_name}`,
+    `City: ${order.city}`,
+    `Please confirm my order.`,
   ];
 
   return lines.join('\n');

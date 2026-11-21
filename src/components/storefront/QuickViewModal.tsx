@@ -129,7 +129,6 @@ export const QuickViewModal: React.FC = () => {
               <h2 className="font-serif-editorial text-3xl font-bold text-[#161F33] mt-1">
                 {quickViewProduct.name}
               </h2>
-              <p className="text-xs text-[#161F33]/60 mt-0.5">SKU: {quickViewProduct.sku}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -153,38 +152,11 @@ export const QuickViewModal: React.FC = () => {
               </span>
             </div>
 
-            <p className="text-sm text-[#161F33]/80 leading-relaxed line-clamp-4">
+            <p className="text-sm text-[#161F33]/80 leading-relaxed line-clamp-3">
               {quickViewProduct.overview}
             </p>
 
             <div className="space-y-3 pt-2 border-t border-[#E5D9C5]">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#161F33]/70">
-                  Color:{' '}
-                </span>
-                <span className="text-xs font-medium text-[#161F33]">
-                  {selectedColor || quickViewProduct.color_name}
-                </span>
-                {quickViewProduct.colors.length > 1 && (
-                  <div className="flex flex-wrap gap-2 mt-1.5">
-                    {quickViewProduct.colors.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setSelectedColor(c)}
-                        className={`px-3 py-1 text-xs border rounded-xs cursor-pointer ${
-                          selectedColor === c
-                            ? 'border-[#3A1042] bg-[#3A1042] text-white'
-                            : 'border-[#E5D9C5] bg-white text-[#161F33]'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               <div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#161F33]/70">
                   Select Size:{' '}

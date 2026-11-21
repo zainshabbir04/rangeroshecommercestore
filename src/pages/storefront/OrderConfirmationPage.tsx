@@ -20,6 +20,22 @@ function buildClientWhatsAppUrl(phone: string, message: string): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
+function buildShortOrderMessage(ord: Order): string {
+  if (ord.store_whatsapp_message) return ord.store_whatsapp_message;
+  const shortItems = (ord.items || [])
+    .map((i) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size || 'Standard'})`)
+    .join('\n');
+  return [
+    `Assalam-o-Alaikum *Rang e Rosh*!`,
+    `I placed Order *#${ord.order_number}*`,
+    shortItems,
+    `Total: *PKR ${Number(ord.total_amount || 0).toLocaleString('en-PK')}* (${ord.payment_method})`,
+    `Name: ${ord.customer_name}`,
+    `City: ${ord.city}`,
+    `Please confirm my order.`,
+  ].join('\n');
+}
+
 export const OrderConfirmationPage: React.FC = () => {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const location = useLocation();
@@ -27,7 +43,7 @@ export const OrderConfirmationPage: React.FC = () => {
 
   const [order, setOrder] = useState<Order | null>(stateOrder);
   const [editableMessage, setEditableMessage] = useState<string>(
-    stateOrder?.customer_whatsapp_message || stateOrder?.whatsapp_message || ''
+    stateOrder ? buildShortOrderMessage(stateOrder) : ''
   );
   const [loading, setLoading] = useState(!stateOrder);
   const [copied, setCopied] = useState(false);
@@ -39,28 +55,14 @@ export const OrderConfirmationPage: React.FC = () => {
         .lookupOrder(orderNumber)
         .then((res) => {
           setOrder(res.order);
-          setEditableMessage(
-            res.order.customer_whatsapp_message || res.order.whatsapp_message || ''
-          );
+          setEditableMessage(buildShortOrderMessage(res.order));
         })
         .catch(() => {})
         .finally(() => setLoading(false));
     } else if (order && !editableMessage) {
-      setEditableMessage(order.customer_whatsapp_message || order.whatsapp_message || '');
+      setEditableMessage(buildShortOrderMessage(order));
     }
   }, [order, orderNumber]);
-
-  // Ensure the order is automatically marked Confirmed on the Admin Dashboard
-  useEffect(() => {
-    if (order && order.status === 'Pending') {
-      api
-        .updateOrderStatus(order.id, 'Confirmed')
-        .then((res) => {
-          setOrder(res.order);
-        })
-        .catch(() => {});
-    }
-  }, [order]);
 
   const handleCopyMessage = () => {
     if (!editableMessage) return;
@@ -91,7 +93,6 @@ export const OrderConfirmationPage: React.FC = () => {
     );
   }
 
-  const clientWhatsappUrl = buildClientWhatsAppUrl(order.customer_phone, editableMessage);
   const storeOwnerWhatsappUrl = buildClientWhatsAppUrl('03130888048', editableMessage);
 
   return (
@@ -102,52 +103,26 @@ export const OrderConfirmationPage: React.FC = () => {
           <CheckCircle2 className="w-9 h-9" />
         </div>
         <span className="inline-block px-3 py-1 bg-[#2E6F73]/15 text-[#2E6F73] text-xs font-bold uppercase tracking-[0.18em] rounded-xs">
-          Order Confirmed on Admin Dashboard • #{order.order_number}
+          Order Received • #{order.order_number}
         </span>
         <h1 className="font-serif-editorial text-3xl sm:text-5xl font-bold text-[#161F33]">
-          Order #{order.order_number} Confirmed &amp; WhatsApp Ready
+          Thank You, {order.customer_name}!
         </h1>
         <p className="text-sm text-[#161F33]/80 max-w-2xl mx-auto leading-relaxed">
-          Order for <strong>{order.customer_name}</strong> has been{' '}
-          <strong className="text-[#2E6F73]">Automatically Confirmed on the Admin Dashboard</strong>.
-          You can send the order confirmation message to both the{' '}
-          <strong className="text-[#3A1042]">Store WhatsApp (03130888048)</strong> and the{' '}
-          <strong className="text-[#2E6F73]">Client&apos;s WhatsApp ({order.customer_phone})</strong>{' '}
-          using the buttons below:
+          Your order <strong>#{order.order_number}</strong> has been received. Click below to send
+          your short order message on WhatsApp to our official Rang e Rosh number (
+          <strong className="text-[#3A1042]">03130888048</strong>):
         </p>
 
-        {/* Dual WhatsApp Action Buttons: 1) To Store Owner (03130888048) & 2) To Client WhatsApp */}
         <div className="pt-3 flex flex-wrap items-center justify-center gap-3 no-print">
           <a
             href={storeOwnerWhatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => {
-              if (order.status !== 'Confirmed') {
-                api.updateOrderStatus(order.id, 'Confirmed').catch(() => {});
-              }
-            }}
-            className="px-6 py-4 bg-[#3A1042] hover:bg-[#8C2D56] text-white text-xs font-semibold tracking-[0.14em] uppercase rounded-xs shadow-md transition-all flex items-center gap-2.5"
-          >
-            <MessageCircle className="w-4 h-4 text-[#D8B572]" />
-            <span>Send Order Message to Store WhatsApp (03130888048)</span>
-          </a>
-
-          <a
-            href={clientWhatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              if (order.status !== 'Confirmed') {
-                api.updateOrderStatus(order.id, 'Confirmed').catch(() => {});
-              }
-            }}
-            className="px-6 py-4 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold tracking-[0.14em] uppercase rounded-xs shadow-md transition-all flex items-center gap-2.5"
+            className="px-6 py-4 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-bold tracking-[0.12em] uppercase rounded-xs shadow-md transition-all flex items-center gap-2.5"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>
-              Send Confirmation to Client WhatsApp ({order.customer_phone})
-            </span>
+            <span>Send Order on WhatsApp to Rang e Rosh (03130888048)</span>
           </a>
 
           <button
@@ -156,15 +131,9 @@ export const OrderConfirmationPage: React.FC = () => {
             className="px-5 py-4 border border-[#3A1042] text-[#3A1042] hover:bg-[#F3ECE0] text-xs font-semibold tracking-[0.14em] uppercase rounded-xs transition-colors flex items-center gap-2 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Print Order Receipt</span>
+            <span>Print Receipt</span>
           </button>
         </div>
-
-        <p className="text-[11px] text-[#161F33]/60 no-print">
-          Note: Clicking the button opens WhatsApp addressed to the client&apos;s number (
-          <strong>{order.customer_phone}</strong>) with the pre-filled confirmation message so you
-          can review and press Send.
-        </p>
       </div>
 
       {/* Order & WhatsApp Message Grid */}
@@ -216,8 +185,7 @@ export const OrderConfirmationPage: React.FC = () => {
                     {item.product_name}
                   </h3>
                   <p className="text-xs text-[#161F33]/70">
-                    SKU: {item.product_sku}
-                    {item.selected_size ? ` • ${item.selected_size}` : ''}
+                    {item.selected_size ? `Size: ${item.selected_size}` : ''}
                     {item.selected_color ? ` • ${item.selected_color}` : ''}
                   </p>
                   <p className="text-xs text-[#8C2D56] font-medium">
@@ -251,12 +219,12 @@ export const OrderConfirmationPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Prepared WhatsApp Confirmation Message to Client (5 cols) */}
+        {/* Right: Short WhatsApp Order Message to Rang e Rosh (5 cols) */}
         <div className="lg:col-span-5 bg-white border border-[#E5D9C5] rounded-xs p-6 space-y-4 no-print">
           <div className="flex items-center justify-between border-b border-[#E5D9C5] pb-3">
             <h2 className="font-serif-editorial text-xl font-bold text-[#161F33] flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-[#2E6F73]" />
-              <span>WhatsApp Message to Client</span>
+              <MessageCircle className="w-5 h-5 text-[#25D366]" />
+              <span>Short WhatsApp Message</span>
             </h2>
             <button
               type="button"
@@ -276,11 +244,11 @@ export const OrderConfirmationPage: React.FC = () => {
           </div>
 
           <p className="text-[11px] text-[#161F33]/70">
-            Recipient Client WhatsApp: <strong className="text-[#2E6F73]">{order.customer_phone}</strong>
+            To Rang e Rosh Official WhatsApp: <strong className="text-[#3A1042]">03130888048</strong>
           </p>
 
           <textarea
-            rows={12}
+            rows={9}
             value={editableMessage}
             onChange={(e) => setEditableMessage(e.target.value)}
             className="w-full p-3.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs text-xs text-[#161F33] font-sans leading-relaxed focus:outline-none focus:border-[#3A1042]"
@@ -290,20 +258,10 @@ export const OrderConfirmationPage: React.FC = () => {
             href={storeOwnerWhatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 bg-[#3A1042] hover:bg-[#8C2D56] text-white text-xs font-semibold tracking-[0.14em] uppercase rounded-xs flex items-center justify-center gap-2 shadow-sm"
-          >
-            <MessageCircle className="w-4 h-4 text-[#D8B572]" />
-            <span>Send Order Message to Store WhatsApp (03130888048)</span>
-          </a>
-
-          <a
-            href={clientWhatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 bg-[#2E6F73] hover:bg-[#23585B] text-white text-xs font-semibold tracking-[0.14em] uppercase rounded-xs flex items-center justify-center gap-2 shadow-sm"
+            className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-bold tracking-[0.12em] uppercase rounded-xs flex items-center justify-center gap-2 shadow-sm"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>Send Confirmation to Client WhatsApp ({order.customer_phone})</span>
+            <span>Send to Rang e Rosh WhatsApp (03130888048)</span>
           </a>
 
           <Link
