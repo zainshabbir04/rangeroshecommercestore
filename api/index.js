@@ -814,7 +814,19 @@ export default function handler(req, res) {
       const sizeStock = body.size_stock || distributeStock(Number(body.available_stock) || 12);
       const totalStock = Object.values(sizeStock).reduce((s, n) => s + Number(n || 0), 0);
       const regPrice = Number(body.regular_price) || 0;
+      if (regPrice <= 0) {
+        return res.status(400).json({ error: 'Regular price must be greater than 0.' });
+      }
       const discPrice = body.discounted_price ? Number(body.discounted_price) : null;
+      if (discPrice !== null && (discPrice < 0 || discPrice >= regPrice)) {
+        return res.status(400).json({
+          error: 'Discounted price must be greater than 0 and less than the regular price.',
+        });
+      }
+      const cleanSku = String(body.sku || `RER-PRET-0${newId}`).trim().toUpperCase();
+      if (state.products.some((p) => String(p.sku || '').toUpperCase() === cleanSku)) {
+        return res.status(400).json({ error: `A product with SKU "${cleanSku}" already exists.` });
+      }
       const effPrice = discPrice && discPrice < regPrice ? discPrice : regPrice;
       const imgs = Array.isArray(body.images) ? body.images : [];
 

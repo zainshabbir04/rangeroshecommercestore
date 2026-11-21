@@ -1141,6 +1141,16 @@ app.post('/api/admin/products', requireAdmin, (req: AuthenticatedRequest, res: R
       return;
     }
 
+    if (discounted_price !== null && discounted_price !== undefined && discounted_price !== '') {
+      const dPrice = Number(discounted_price);
+      if (isNaN(dPrice) || dPrice < 0 || dPrice >= regPrice) {
+        res
+          .status(400)
+          .json({ error: 'Discounted price must be greater than 0 and less than the regular price.' });
+        return;
+      }
+    }
+
     const cleanSku = String(sku).trim().toUpperCase();
     const existingSku = db.prepare('SELECT id FROM products WHERE upper(sku) = ?').get(cleanSku);
     if (existingSku) {
@@ -1330,6 +1340,13 @@ app.put('/api/admin/products/:id', requireAdmin, (req: AuthenticatedRequest, res
       discounted_price !== null && discounted_price !== undefined && discounted_price !== ''
         ? Number(discounted_price)
         : null;
+
+    if (discPrice !== null && (isNaN(discPrice) || discPrice < 0 || discPrice >= regPrice)) {
+      res
+        .status(400)
+        .json({ error: 'Discounted price must be greater than 0 and less than the regular price.' });
+      return;
+    }
 
     db.exec('BEGIN IMMEDIATE');
     try {
