@@ -121,6 +121,7 @@ export const CartPage: React.FC = () => {
                     >
                       {item.name}
                     </Link>
+                    <p className="text-xs text-[#161F33]/60 font-mono">SKU: {item.sku}</p>
                   </div>
                   <button
                     type="button"

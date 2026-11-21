@@ -556,7 +556,8 @@ export const AdminOrdersPage: React.FC = () => {
                             <td className="py-3 px-3">
                               <div className="font-bold text-[#161F33]">{item.product_name}</div>
                               <div className="text-[11px] text-[#161F33]/65">
-                                {item.selected_size ? `Size: ${item.selected_size}` : ''}
+                                SKU: {item.product_sku}
+                                {item.selected_size ? ` • ${item.selected_size}` : ''}
                                 {item.selected_color ? ` • ${item.selected_color}` : ''}
                               </div>
                             </td>

@@ -16,7 +16,10 @@ import {
   Sparkles,
   Ruler,
   Star,
+  Scissors,
+  Layers,
   Droplets,
+  Palette,
   ChevronDown,
 } from 'lucide-react';
 import { Product, STANDARD_SIZES } from '../../types';
@@ -231,24 +234,45 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const whatsappInquiryMsg = encodeURIComponent(
-    `Assalam-o-Alaikum Rang e Rosh! I would like to inquire about *${fullDescriptiveTitle}* (Size: ${selectedSize || 'Medium'}, Price: ${formatRsPrice(product.effective_price)}).`
+    `Assalam-o-Alaikum Rang e Rosh! I would like to inquire about *${fullDescriptiveTitle}* (SKU: ${product.sku}, Size: ${selectedSize || 'Medium'}, Price: ${formatRsPrice(product.effective_price)}).`
   );
   const whatsappClean = settings?.whatsapp_clean || '923130888048';
 
   const accordionSections = [
     {
       id: 'embroidered',
-      title: 'Embroidery & Design',
+      title: 'Embroidered Details',
       content: product.embroidered_details,
       Icon: Sparkles,
       badgeColor: 'bg-[#3A1042] text-[#F7E3B5]',
     },
     {
+      id: 'stitching',
+      title: 'Suit Stitching & Construction',
+      content: product.suit_stitching,
+      Icon: Scissors,
+      badgeColor: 'bg-[#B8862D] text-white',
+    },
+    {
+      id: 'architecture',
+      title: 'Outfit Architecture',
+      content: product.outfit_architecture,
+      Icon: Layers,
+      badgeColor: 'bg-[#2E6F73] text-white',
+    },
+    {
       id: 'wash',
-      title: 'Wash & Care',
+      title: 'Wash & Care Instructions',
       content: product.wash_care,
       Icon: Droplets,
       badgeColor: 'bg-[#8C2D56] text-white',
+    },
+    {
+      id: 'disclaimer',
+      title: 'Colour Disclaimer',
+      content: product.color_disclaimer,
+      Icon: Palette,
+      badgeColor: 'bg-[#161F33] text-[#F7E3B5]',
     },
   ].filter((sec) => Boolean(sec.content));
 
@@ -260,7 +284,7 @@ export const ProductDetailPage: React.FC = () => {
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-2">
-            {/* Breadcrumb */}
+            {/* Breadcrumb + Collection Pill */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-[#FAF6F0]/75">
               <Link to="/" className="hover:text-[#F7E3B5] transition-colors">
                 Home
@@ -271,6 +295,9 @@ export const ProductDetailPage: React.FC = () => {
               </Link>
               <span>/</span>
               <span className="text-[#F7E3B5] font-bold">{product.name}</span>
+              <span className="ml-2 px-2.5 py-0.5 rounded-full bg-white/10 border border-[#D8B572]/40 text-[10px] font-mono text-[#F7E3B5]">
+                SKU: {product.sku}
+              </span>
             </div>
 
             {/* Main Product Heading Above Images */}
@@ -543,20 +570,41 @@ export const ProductDetailPage: React.FC = () => {
           {/* Boutique Purchase Console Card */}
           <div className="bg-white border-2 border-[#D8B572]/60 rounded-3xl p-5 sm:p-6 shadow-[0_14px_38px_-12px_rgba(58,16,66,0.14)] space-y-5">
             {/* Overview */}
-            <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E5D9C5] space-y-2">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#3A1042]">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#3A1042]/10">
-                  {product.product_type_detail || '2-Piece Stitched Suit'}
-                </span>
-                {product.fabric && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#B8862D]/15 text-[#785312]">
-                    {product.fabric}
-                  </span>
-                )}
-              </div>
+            <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E5D9C5] space-y-1.5">
+              <span className="font-couture-unique text-[10px] font-bold uppercase tracking-wider text-[#8C2D56] block">
+                Atelier Overview
+              </span>
               <p className="text-xs sm:text-sm text-[#161F33]/85 leading-relaxed">
                 {product.overview}
               </p>
+            </div>
+
+            {/* Color Selector */}
+            <div>
+              <div className="flex justify-between text-xs mb-2">
+                <span className="font-bold uppercase tracking-wider text-[#161F33]/70">
+                  Color Selection
+                </span>
+                <span className="font-semibold text-[#3A1042]">
+                  {selectedColor || product.color_name}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(product.colors.length > 0 ? product.colors : [product.color_name]).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setSelectedColor(c)}
+                    className={`px-4 py-2 text-xs font-bold rounded-full border transition-all cursor-pointer ${
+                      selectedColor === c
+                        ? 'border-[#D8B572] bg-gradient-to-r from-[#3A1042] to-[#561961] text-white shadow-sm'
+                        : 'border-[#E5D9C5] bg-[#FAF6F0] text-[#161F33] hover:border-[#3A1042]'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Size Selector (Small, Medium, Large, Extra Large) */}
@@ -707,6 +755,49 @@ export const ProductDetailPage: React.FC = () => {
                 <span>7-Day Easy Return</span>
               </div>
             </div>
+          </div>
+
+          {/* 4 Multi-Color Product Specification Cards on the Right Side */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {[
+              {
+                label: 'Product Type',
+                value: product.product_type_detail || '2-Piece Stitched Suit',
+                style: 'bg-[#F9F3FB] border-[#3A1042]/25 text-[#3A1042]',
+                delay: '0s',
+              },
+              {
+                label: 'Color Palette',
+                value: product.color_name,
+                style: 'bg-[#FDF9F0] border-[#B8862D]/35 text-[#785312]',
+                delay: '0.25s',
+              },
+              {
+                label: 'Fabric Weave',
+                value: product.fabric || 'Premium Seasonal Weave',
+                style: 'bg-[#F0F9F9] border-[#2E6F73]/30 text-[#1D4E52]',
+                delay: '0.5s',
+              },
+              {
+                label: 'Silhouette Fit',
+                value: product.fit || 'Relaxed Straight Fit',
+                style: 'bg-[#FCF2F6] border-[#8C2D56]/30 text-[#6E1E40]',
+                delay: '0.75s',
+              },
+            ].map((spec) => (
+              <div
+                key={spec.label}
+                style={{ animationDelay: spec.delay }}
+                className={`product-card-animated p-3 sm:p-4 rounded-2xl border shadow-2xs ${spec.style}`}
+              >
+                <span className="block text-[9px] font-extrabold uppercase tracking-[0.16em] opacity-75">
+                  {spec.label}
+                </span>
+                <p className="font-serif-editorial text-xs sm:text-base font-bold leading-snug mt-1">
+                  {spec.value}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

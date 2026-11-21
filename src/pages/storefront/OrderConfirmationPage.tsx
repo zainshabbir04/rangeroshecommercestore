@@ -185,7 +185,8 @@ export const OrderConfirmationPage: React.FC = () => {
                     {item.product_name}
                   </h3>
                   <p className="text-xs text-[#161F33]/70">
-                    {item.selected_size ? `Size: ${item.selected_size}` : ''}
+                    SKU: {item.product_sku}
+                    {item.selected_size ? ` • ${item.selected_size}` : ''}
                     {item.selected_color ? ` • ${item.selected_color}` : ''}
                   </p>
                   <p className="text-xs text-[#8C2D56] font-medium">
