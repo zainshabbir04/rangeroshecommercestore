@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { Product, STANDARD_SIZES } from '../../types';
+import { api } from '../../services/api';
 
 export interface ProductReview {
   id: string;
@@ -278,8 +279,8 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({ pr
     setReviews(combined);
 
     // Also fetch any shared server reviews if available
-    fetch(`/api/products/${encodeURIComponent(slug)}/reviews`)
-      .then((res) => (res.ok ? res.json() : null))
+    api
+      .getProductReviews(slug)
       .then((data) => {
         if (data && Array.isArray(data.reviews) && data.reviews.length > 0) {
           setReviews((prev) => {
@@ -354,12 +355,8 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({ pr
 
       setReviews((prev) => [newReview, ...prev]);
 
-      // Best-effort sync to backend API
-      fetch(`/api/products/${encodeURIComponent(slug)}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newReview),
-      }).catch(() => {});
+      // Best-effort sync to backend API (works on both Vercel and Cloudflare custom domain)
+      api.createProductReview(slug, newReview).catch(() => {});
 
       setCustomerName('');
       setCity('');

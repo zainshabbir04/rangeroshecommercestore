@@ -190,11 +190,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const target = items.find((i) => i.key === key);
     if (!target) return { success: false };
 
-    const otherVariantsQty = items
-      .filter((i) => i.product_id === target.product_id && i.key !== key)
+    const sameSizeOtherRowsQty = items
+      .filter(
+        (i) =>
+          i.product_id === target.product_id &&
+          i.selected_size === target.selected_size &&
+          i.key !== key
+      )
       .reduce((sum, i) => sum + i.quantity, 0);
 
-    if (otherVariantsQty + newQuantity > target.max_available) {
+    if (sameSizeOtherRowsQty + newQuantity > target.max_available) {
       return {
         success: false,
         message: `Maximum available stock for "${target.name}" (${target.selected_size}) reached.`,
@@ -223,7 +228,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const shippingCharges = useMemo(() => {
     if (items.length === 0) return 0;
-    const freeThreshold = settings?.free_shipping_threshold ?? 15000;
+    const freeThreshold = settings?.free_shipping_threshold ?? 10000;
     const baseShipping = settings?.shipping_charges ?? 250;
     if (freeThreshold > 0 && subtotal >= freeThreshold) {
       return 0;

@@ -63,7 +63,7 @@ export const CartPage: React.FC = () => {
     );
   }
 
-  const freeThreshold = settings?.free_shipping_threshold ?? 15000;
+  const freeThreshold = settings?.free_shipping_threshold ?? 10000;
   const remainingForFree = Math.max(0, freeThreshold - subtotal);
 
   return (
@@ -121,7 +121,6 @@ export const CartPage: React.FC = () => {
                     >
                       {item.name}
                     </Link>
-                    <p className="text-xs text-[#161F33]/60 font-mono">SKU: {item.sku}</p>
                   </div>
                   <button
                     type="button"

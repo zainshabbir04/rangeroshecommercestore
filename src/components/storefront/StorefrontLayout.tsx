@@ -58,7 +58,7 @@ const FOOTER_INFO_MODAL_CONTENT: Record<
     points: [
       'We offer a hassle-free 7-Day Exchange Policy from the date of delivery for size issues or manufacturing defects.',
       'Items must be unused, unwashed, and in original packaging with tags intact.',
-      'Contact our WhatsApp team (+923 200 300 552) with your Order ID to initiate an instant size or article exchange.',
+      'Contact our WhatsApp team (03130888048) with your Order ID to initiate an instant size or article exchange.',
     ],
   },
   terms_service: {
@@ -75,7 +75,7 @@ const FOOTER_INFO_MODAL_CONTENT: Record<
     title: 'Shipping Policy',
     points: [
       'Nationwide delivery across Pakistan within 3–4 working days after WhatsApp order confirmation.',
-      'Standard nationwide shipping is PKR 250, with Complimentary Free Shipping on orders above PKR 15,000.',
+      'Standard nationwide shipping is PKR 250, with Complimentary Free Shipping on orders above PKR 10,000.',
       'Every parcel is packed in sealed protective boutique packaging and shipped via trusted nationwide couriers.',
     ],
   },
@@ -591,8 +591,8 @@ export const StorefrontLayout: React.FC = () => {
               <p className="font-semibold text-[#3A1042] uppercase tracking-wider">
                 Customer Concierge
               </p>
-              <p>{settings?.contact_phone || '+923 130 888 048'}</p>
-              <p>Orders: {settings?.whatsapp_number || '+923 200 300 552'}</p>
+              <p>{settings?.contact_phone || '03130888048'}</p>
+              <p>Orders: {settings?.whatsapp_number || '03130888048'}</p>
               <p>{settings?.contact_email || 'rangerosh.official@gmail.com'}</p>
             </div>
           </div>
@@ -827,10 +827,10 @@ export const StorefrontLayout: React.FC = () => {
                       General Inquiries
                     </span>
                     <a
-                      href={`tel:${(settings?.contact_phone || '+923 130 888 048').replace(/\s+/g, '')}`}
+                      href={`tel:${(settings?.contact_phone || '03130888048').replace(/\s+/g, '')}`}
                       className="font-semibold text-white hover:text-[#F7E3B5]"
                     >
-                      {settings?.contact_phone || '+923 130 888 048'}
+                      {settings?.contact_phone || '03130888048'}
                     </a>
                   </div>
                 </li>
@@ -847,7 +847,7 @@ export const StorefrontLayout: React.FC = () => {
                       rel="noopener noreferrer"
                       className="font-semibold text-white hover:text-[#F7E3B5]"
                     >
-                      {settings?.whatsapp_number || '+923 200 300 552'}
+                      {settings?.whatsapp_number || '03130888048'}
                     </a>
                   </div>
                 </li>

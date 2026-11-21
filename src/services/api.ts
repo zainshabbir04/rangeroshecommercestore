@@ -150,6 +150,23 @@ export const api = {
       () => fallbackStore.getProductDetail(slugOrId)
     ),
 
+  getProductReviews: (slug: string) =>
+    request<{ reviews: any[] }>(
+      `/api/products/${encodeURIComponent(slug)}/reviews`,
+      {},
+      () => ({ reviews: [] })
+    ),
+
+  createProductReview: (slug: string, payload: any) =>
+    request<{ review: any; reviews: any[] }>(
+      `/api/products/${encodeURIComponent(slug)}/reviews`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      () => ({ review: payload, reviews: [payload] })
+    ),
+
   createOrder: async (payload: {
     customer_name: string;
     customer_phone: string;

@@ -190,7 +190,7 @@ export const AdminSettingsPage: React.FC = () => {
                 required
                 value={form.whatsapp_number || ''}
                 onChange={(e) => setForm({ ...form, whatsapp_number: e.target.value })}
-                placeholder="+923 200 300 552"
+                placeholder="03130888048"
                 className="w-full p-2.5 bg-[#FAF6F0] border border-[#2E6F73] rounded-xs font-semibold"
               />
             </div>
@@ -203,7 +203,7 @@ export const AdminSettingsPage: React.FC = () => {
                 type="text"
                 value={form.contact_phone || ''}
                 onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
-                placeholder="+923 130 888 048"
+                placeholder="03130888048"
                 className="w-full p-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
               />
             </div>
@@ -252,7 +252,7 @@ export const AdminSettingsPage: React.FC = () => {
               <input
                 type="number"
                 min="0"
-                value={form.free_shipping_threshold ?? 15000}
+                value={form.free_shipping_threshold ?? 10000}
                 onChange={(e) =>
                   setForm({ ...form, free_shipping_threshold: Number(e.target.value) })
                 }

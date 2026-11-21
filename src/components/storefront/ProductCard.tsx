@@ -95,10 +95,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, index = 0 }) 
     e.stopPropagation();
     if (isOutOfStock) return;
 
+    const sizeStockMap = product.inventory.size_stock || {};
+    const firstAvailSize =
+      product.sizes.find((s) => Number(sizeStockMap[s] ?? 1) > 0) ||
+      product.sizes[0] ||
+      'Small';
+
     const res = addToCart(
       product,
       1,
-      product.sizes[0] || product.fit,
+      firstAvailSize,
       product.colors[0] || product.color_name,
       true
     );

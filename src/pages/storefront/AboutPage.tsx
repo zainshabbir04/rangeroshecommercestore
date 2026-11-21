@@ -18,7 +18,7 @@ import { useStore } from '../../context/StoreContext';
 export const AboutPage: React.FC = () => {
   const { settings, setIsSizeChartOpen } = useStore();
   const logoUrl = settings?.logo_url || '/assets/logo/rang-e-rosh-logo-v2.jpg';
-  const whatsappClean = settings?.whatsapp_clean || '923200300552';
+  const whatsappClean = settings?.whatsapp_clean || '923130888048';
 
   const sliderImages = [
     { slug: 'anna', image: '/assets/products/anna/1.jpg', alt: 'Anna Look 1' },
@@ -307,7 +307,7 @@ export const AboutPage: React.FC = () => {
                     WhatsApp Concierge
                   </p>
                   <p className="font-serif-editorial text-2xl sm:text-3xl font-bold text-white mt-1">
-                    {settings?.whatsapp_number || '+923 200 300 552'}
+                    {settings?.whatsapp_number || '03130888048'}
                   </p>
                   <p className="text-xs text-white/80 mt-1">
                     Direct order confirmation, live suit videos & quick sizing help.
@@ -323,7 +323,7 @@ export const AboutPage: React.FC = () => {
 
             {/* Card 2: Direct Phone Helpline */}
             <a
-              href={`tel:${(settings?.contact_phone || '+923 130 888 048').replace(/\s+/g, '')}`}
+              href={`tel:${(settings?.contact_phone || '03130888048').replace(/\s+/g, '')}`}
               style={{ animationDelay: '0.35s' }}
               className="product-card-animated group relative rounded-2xl p-6 bg-gradient-to-br from-[#8B6217] via-[#B8862D] to-[#6E4C10] border-2 border-[#F7E3B5]/70 shadow-xl overflow-hidden flex flex-col justify-between gap-4 hover:scale-[1.02] transition-all"
             >
@@ -343,7 +343,7 @@ export const AboutPage: React.FC = () => {
                     Direct Styling Line
                   </p>
                   <p className="font-serif-editorial text-2xl sm:text-3xl font-bold text-white mt-1">
-                    {settings?.contact_phone || '+923 130 888 048'}
+                    {settings?.contact_phone || '03130888048'}
                   </p>
                   <p className="text-xs text-white/85 mt-1">
                     Speak directly with our customer care team for urgent dispatch queries.

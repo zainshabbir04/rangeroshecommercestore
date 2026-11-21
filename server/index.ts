@@ -192,7 +192,7 @@ function getStoreSettings() {
     contact_phone: row?.contact_phone || '03130888048',
     whatsapp_number: waNum,
     shipping_charges: Number(row?.shipping_charges ?? 250),
-    free_shipping_threshold: Number(row?.free_shipping_threshold ?? 15000),
+    free_shipping_threshold: Number(row?.free_shipping_threshold ?? 10000),
     low_stock_threshold: Number(row?.low_stock_threshold ?? 5),
     payment_methods: paymentMethods,
     whatsapp_clean: normalizeWhatsAppNumber(waNum),

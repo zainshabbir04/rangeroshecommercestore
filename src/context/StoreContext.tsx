@@ -26,11 +26,11 @@ const DEFAULT_SETTINGS: StoreSettings = {
   whatsapp_number: '03130888048',
   whatsapp_clean: '923130888048',
   shipping_charges: 250,
-  free_shipping_threshold: 15000,
+  free_shipping_threshold: 10000,
   low_stock_threshold: 5,
   currency: 'PKR',
   announcement_text:
-    'Complimentary Nationwide Shipping on Orders Above PKR 15,000  •  Direct WhatsApp Concierge Order Confirmation',
+    'Complimentary Nationwide Shipping on Orders Above PKR 10,000  •  Direct WhatsApp Concierge Order Confirmation',
   hero_badge: 'RANG E ROSH  •  LUXURY PRET COLLECTION',
   hero_title: 'Artisanal Embroidery & Timeless Stitched Elegance',
   hero_subtitle:

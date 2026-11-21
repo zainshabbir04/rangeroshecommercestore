@@ -23,7 +23,7 @@ export const CartDrawer: React.FC = () => {
 
   if (!isCartOpen) return null;
 
-  const freeShippingThreshold = settings?.free_shipping_threshold ?? 15000;
+  const freeShippingThreshold = settings?.free_shipping_threshold ?? 10000;
   const amountRemainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingProgress =
     freeShippingThreshold > 0 ? Math.min(100, (subtotal / freeShippingThreshold) * 100) : 100;
