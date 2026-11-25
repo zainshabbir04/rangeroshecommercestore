@@ -30,7 +30,7 @@ export interface TrackMetaEventOptions {
   eventSourceUrl?: string;
 }
 
-const CLOUD_API_ORIGIN = 'https://rangeroshecommercestore.vercel.app';
+const CLOUD_API_ORIGIN = 'https://rangerosh.com';
 
 /**
  * Reads a browser cookie by name (used for `_fbp` and `_fbc`).

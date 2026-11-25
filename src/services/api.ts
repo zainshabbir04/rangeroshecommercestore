@@ -28,7 +28,7 @@ export function setAdminToken(token: string | null): void {
   }
 }
 
-const CLOUD_API_ORIGIN = 'https://rangeroshecommercestore.vercel.app';
+const CLOUD_API_ORIGIN = 'https://rangerosh.com';
 
 function mergeOrdersList(primary: Order[], secondary: Order[]): Order[] {
   const byOrderNumber = new Map<string, Order>();
