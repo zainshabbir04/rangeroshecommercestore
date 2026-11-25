@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import metaCapiHandler from './meta-capi.js';
+import { generateMetaCatalogCsv } from './meta-catalog.js';
 
 const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v4.json');
 const STANDARD_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
@@ -449,6 +450,14 @@ export default function handler(req, res) {
     // 0. Meta Conversions API (CAPI)
     if (pathname === '/api/meta-capi') {
       return metaCapiHandler(req, res);
+    }
+
+    // 0.5. Meta Commerce Catalog CSV Feed
+    if (pathname === '/api/meta-catalog' && method === 'GET') {
+      const csv = generateMetaCatalogCsv(state.products, 'https://rangerosh.com');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'inline; filename="rang-e-rosh-meta-catalog.csv"');
+      return res.status(200).send(csv);
     }
 
     // 1. Storefront Init

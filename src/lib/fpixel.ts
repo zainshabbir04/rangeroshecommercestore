@@ -5,13 +5,20 @@ declare global {
   }
 }
 
+export const DEFAULT_META_PIXEL_ID = '2635132979997484';
+
 export const FB_PIXEL_ID: string =
   (typeof import.meta !== 'undefined' &&
-    ((import.meta as any).env?.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
+    ((import.meta as any).env?.NEXT_PUBLIC_META_PIXEL_ID ||
+      (import.meta as any).env?.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
+      (import.meta as any).env?.VITE_META_PIXEL_ID ||
       (import.meta as any).env?.VITE_FACEBOOK_PIXEL_ID)) ||
   (typeof process !== 'undefined' &&
-    (process.env?.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || process.env?.VITE_FACEBOOK_PIXEL_ID)) ||
-  '';
+    (process.env?.NEXT_PUBLIC_META_PIXEL_ID ||
+      process.env?.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
+      process.env?.VITE_META_PIXEL_ID ||
+      process.env?.VITE_FACEBOOK_PIXEL_ID)) ||
+  DEFAULT_META_PIXEL_ID;
 
 /**
  * Triggers a standard Meta Pixel PageView event.

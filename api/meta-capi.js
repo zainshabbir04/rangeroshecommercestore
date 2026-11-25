@@ -40,20 +40,28 @@ export default async function handler(req, res) {
 
     const eventId = String(body.event_id || `evt_${Date.now()}`).trim();
     const pixelId =
+      process.env.NEXT_PUBLIC_META_PIXEL_ID ||
       process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
+      process.env.VITE_META_PIXEL_ID ||
       process.env.VITE_FACEBOOK_PIXEL_ID ||
       process.env.FACEBOOK_PIXEL_ID ||
+      '2635132979997484';
+    const accessToken =
+      process.env.META_CAPI_ACCESS_TOKEN ||
+      process.env.META_ACCESS_TOKEN ||
       '';
-    const accessToken = process.env.META_ACCESS_TOKEN || '';
     const testEventCode = process.env.META_TEST_EVENT_CODE || '';
 
+    const cfConnectingIp = req.headers['cf-connecting-ip'];
     const forwardedFor = req.headers['x-forwarded-for'];
     const clientIp =
-      (Array.isArray(forwardedFor)
-        ? forwardedFor[0]
-        : typeof forwardedFor === 'string'
-          ? forwardedFor.split(',')[0]
-          : req.headers['x-real-ip'] || req.socket?.remoteAddress || ''
+      (cfConnectingIp
+        ? String(cfConnectingIp)
+        : Array.isArray(forwardedFor)
+          ? forwardedFor[0]
+          : typeof forwardedFor === 'string'
+            ? forwardedFor.split(',')[0]
+            : req.headers['x-real-ip'] || req.socket?.remoteAddress || ''
       )
         ?.toString()
         .trim() || undefined;

@@ -3,8 +3,11 @@ import crypto from 'node:crypto';
 export interface Env {
   DB?: any; // Optional Cloudflare D1Database binding (`[[d1_databases]] binding = "DB"`)
   ASSETS?: { fetch: (req: Request) => Promise<Response> };
+  NEXT_PUBLIC_META_PIXEL_ID?: string;
   NEXT_PUBLIC_FACEBOOK_PIXEL_ID?: string;
+  VITE_META_PIXEL_ID?: string;
   VITE_FACEBOOK_PIXEL_ID?: string;
+  META_CAPI_ACCESS_TOKEN?: string;
   META_ACCESS_TOKEN?: string;
   META_TEST_EVENT_CODE?: string;
   ADMIN_DEFAULT_EMAIL?: string;
@@ -664,8 +667,12 @@ export default {
         }
         const eventId = String(body.event_id || `evt_${Date.now()}`).trim();
         const pixelId =
-          env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || env.VITE_FACEBOOK_PIXEL_ID || '';
-        const accessToken = env.META_ACCESS_TOKEN || '';
+          env.NEXT_PUBLIC_META_PIXEL_ID ||
+          env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
+          env.VITE_META_PIXEL_ID ||
+          env.VITE_FACEBOOK_PIXEL_ID ||
+          '2635132979997484';
+        const accessToken = env.META_CAPI_ACCESS_TOKEN || env.META_ACCESS_TOKEN || '';
         const testEventCode = env.META_TEST_EVENT_CODE || '';
 
         const clientIp =
@@ -754,6 +761,55 @@ export default {
           },
           graphRes.ok ? 200 : graphRes.status
         );
+      }
+
+      // 0.5. Meta Commerce Catalog CSV Feed
+      if (pathname === '/api/meta-catalog' && method === 'GET') {
+        const escapeCell = (val: any) => {
+          const str = String(val ?? '').replace(/\r?\n|\r/g, ' ').trim();
+          if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        };
+        const origin = 'https://rangerosh.com';
+        const header = 'id,title,description,availability,condition,price,link,image_link,brand';
+        const rows = (memoryState.products || [])
+          .filter((p) => p && p.is_published)
+          .map((p) => {
+            const id = String(p.sku || p.id || '').trim();
+            const title = String(p.title || p.name || '').trim();
+            const description = String(
+              p.overview || p.fabric_details || `${title} — Rang e Rosh Ladies Stitched Suit`
+            ).trim();
+            const avail = Number(p.inventory?.available_stock ?? 14) > 0 ? 'in stock' : 'out of stock';
+            const price = `${Math.round(Number(p.effective_price ?? p.discounted_price ?? p.regular_price ?? 4699))} PKR`;
+            const link = `${origin}/product/${encodeURIComponent(String(p.slug || p.id))}`;
+            const rawImg = String(p.primary_image || '').trim();
+            const imageLink = rawImg.startsWith('http')
+              ? rawImg
+              : `${origin}${rawImg.startsWith('/') ? '' : '/'}${encodeURI(rawImg)}`;
+            return [
+              escapeCell(id),
+              escapeCell(title),
+              escapeCell(description),
+              escapeCell(avail),
+              escapeCell('new'),
+              escapeCell(price),
+              escapeCell(link),
+              escapeCell(imageLink),
+              escapeCell('Rang e Rosh'),
+            ].join(',');
+          });
+        const csv = [header, ...rows].join('\n');
+        return new Response(csv, {
+          status: 200,
+          headers: {
+            ...CORS_HEADERS,
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'inline; filename="rang-e-rosh-meta-catalog.csv"',
+          },
+        });
       }
 
       // 1. Storefront Init

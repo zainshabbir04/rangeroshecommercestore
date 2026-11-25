@@ -21,8 +21,9 @@ import {
   normalizeWhatsAppNumber,
   tryAutoSendWhatsAppToClient,
 } from './whatsapp.ts';
-import { sendMetaCapiEvent } from '../lib/metaCapi.ts';
+import { sendMetaCapiEvent, buildMetaCatalogCsv } from '../lib/metaCapi.ts';
 
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config();
 
 // Initialize DB & sync original assets on startup
@@ -256,13 +257,16 @@ app.post('/api/meta-capi', async (req: Request, res: Response) => {
       return;
     }
 
+    const cfConnectingIp = req.headers['cf-connecting-ip'];
     const forwardedFor = req.headers['x-forwarded-for'];
     const clientIp =
-      (Array.isArray(forwardedFor)
-        ? forwardedFor[0]
-        : typeof forwardedFor === 'string'
-          ? forwardedFor.split(',')[0]
-          : (req.headers['x-real-ip'] as string) || req.socket?.remoteAddress || ''
+      (cfConnectingIp
+        ? String(cfConnectingIp)
+        : Array.isArray(forwardedFor)
+          ? forwardedFor[0]
+          : typeof forwardedFor === 'string'
+            ? forwardedFor.split(',')[0]
+            : (req.headers['x-real-ip'] as string) || req.socket?.remoteAddress || ''
       )
         ?.toString()
         .trim() || undefined;
@@ -292,6 +296,21 @@ app.post('/api/meta-capi', async (req: Request, res: Response) => {
     res.status(200).json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Meta CAPI dispatch error' });
+  }
+});
+
+app.get('/api/meta-catalog', (_req: Request, res: Response) => {
+  try {
+    const rows = db
+      .prepare('SELECT * FROM products WHERE is_published = 1 ORDER BY is_featured DESC, id ASC')
+      .all() as any[];
+    const products = rows.map(enrichProduct);
+    const csv = buildMetaCatalogCsv(products, 'https://rangerosh.com');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename="rang-e-rosh-meta-catalog.csv"');
+    res.status(200).send(csv);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to generate Meta catalog feed' });
   }
 });
 

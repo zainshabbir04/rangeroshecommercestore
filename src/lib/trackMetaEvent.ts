@@ -100,12 +100,29 @@ function splitFullName(fullName?: string): { fn?: string; ln?: string } {
  * Fires both the client-side Meta Pixel (`fbq('track', eventName, customData, { eventID })`)
  * and the server-side Meta Conversions API (`POST /api/meta-capi` with `keepalive: true`)
  * using the exact same `event_id` for automatic Meta event deduplication.
+ *
+ * Supports both calling conventions:
+ * - `trackMetaEvent(eventName, params, eventId)`
+ * - `trackMetaEvent({ eventName, customData, userData, eventId, orderId })`
  */
-export async function trackMetaEvent(options: TrackMetaEventOptions): Promise<{
+export async function trackMetaEvent(
+  eventOrOptions: TrackMetaEventOptions | StandardMetaEventName | string,
+  params?: Record<string, any>,
+  explicitEventId?: string
+): Promise<{
   eventId: string;
   pixelFired: boolean;
   capiSent: boolean;
 }> {
+  const options: TrackMetaEventOptions =
+    typeof eventOrOptions === 'string'
+      ? {
+          eventName: eventOrOptions,
+          customData: params || {},
+          eventId: explicitEventId,
+        }
+      : eventOrOptions;
+
   const { eventName, customData = {}, userData = {}, eventSourceUrl } = options;
   const eventId = generateMetaEventId(eventName, options.eventId, options.orderId);
 

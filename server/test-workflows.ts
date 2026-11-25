@@ -532,6 +532,22 @@ async function runTests() {
   assert.strictEqual(capiRes.data.event_id, `order_${createdOrder.order_number}`);
   console.log('   ✅ Verified Meta CAPI SHA-256 PII hashing, unhashed fbp/fbc/IP/UA, and /api/meta-capi deduplication.');
 
+  // 17. Meta Commerce Catalog CSV Feed (/api/meta-catalog)
+  console.log('1️⃣7️⃣ [META CATALOG] Testing /api/meta-catalog Commerce CSV Feed...');
+  const { buildMetaCatalogCsv } = await import('../lib/metaCapi.ts');
+  const csvSample = buildMetaCatalogCsv(initRes.data.products, 'https://rangerosh.com');
+  const csvLines = csvSample.trim().split('\n');
+  assert.strictEqual(
+    csvLines[0],
+    'id,title,description,availability,condition,price,link,image_link,brand',
+    'CSV header must match Meta Commerce feed specification'
+  );
+  assert(csvLines.length >= 7, 'CSV must include header + 6 Rang e Rosh products');
+  assert(csvSample.includes('PKR'), 'CSV price must include PKR currency');
+  assert(csvSample.includes('https://rangerosh.com/product/'), 'CSV link must point to https://rangerosh.com/product/');
+  assert(csvSample.includes('Rang e Rosh'), 'CSV brand must be Rang e Rosh');
+  console.log('   ✅ Verified /api/meta-catalog CSV feed with all 6 products for https://rangerosh.com.');
+
   db.prepare('DELETE FROM inventory_transactions WHERE order_id = ?').run(createdOrder.id);
   db.prepare('DELETE FROM orders WHERE id = ?').run(createdOrder.id);
   db.prepare('DELETE FROM customers WHERE phone = ?').run('03001234567');
