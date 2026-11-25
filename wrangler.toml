@@ -1,6 +1,17 @@
 name = "rangeroshecommercestore"
+main = "worker/index.ts"
 compatibility_date = "2025-02-01"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+# Optional Cloudflare D1 SQLite Database Binding (Uncomment & paste your database_id after running `npx wrangler d1 create rangerosh-db`)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "rangerosh-db"
+# database_id = "YOUR_D1_DATABASE_ID"
+

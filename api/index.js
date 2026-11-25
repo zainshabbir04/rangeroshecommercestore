@@ -413,8 +413,11 @@ function saveCloudState(state) {
   memoryState = state;
   try {
     fs.writeFileSync(CLOUD_STATE_FILE, JSON.stringify(state), 'utf8');
-  } catch {
-    // ignore write errors
+  } catch (err) {
+    console.error('[CloudStateWriteError] Failed to persist state to disk:', {
+      file: CLOUD_STATE_FILE,
+      error: err?.message || String(err),
+    });
   }
 }
 
@@ -533,159 +536,196 @@ export default function handler(req, res) {
 
     // 4. Create Order (Auto-Confirmed on Admin Dashboard + WhatsApp Message from 03130888048 to Client)
     if (pathname === '/api/orders' && method === 'POST') {
-      let subtotal = 0;
-      const resolvedItems = (body.items || []).map((item) => {
-        const prod = state.products.find((p) => p.id === Number(item.product_id));
-        if (!prod) throw new Error('Product not found');
-        const qty = Number(item.quantity) || 1;
-        const selSize = (item.selected_size || 'Small').trim();
-        const sizeAvail = Number(
-          prod.inventory.size_stock?.[selSize] ?? prod.inventory.available_stock
-        );
-        if (qty > sizeAvail) {
-          throw new Error(`Insufficient stock for "${prod.name}" (${selSize}).`);
-        }
-        const lineTotal = prod.effective_price * qty;
-        subtotal += lineTotal;
+      try {
+        const customerName = String(body.customer_name || '').trim();
+        const customerPhone = String(body.customer_phone || '').trim();
+        const shippingAddress = String(body.shipping_address || '').trim();
+        const city = String(body.city || '').trim();
+        const items = Array.isArray(body.items) ? body.items : [];
 
-        const autoConfirm = Boolean(body.auto_confirm);
-        if (autoConfirm) {
-          if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
-            prod.inventory.size_stock[selSize] = Math.max(
-              0,
-              Number(prod.inventory.size_stock[selSize] || 0) - qty
-            );
-            prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
-              (s, n) => s + Number(n || 0),
-              0
+        if (!customerName || !customerPhone || !shippingAddress || !city || items.length === 0) {
+          console.error('[OrderValidationError] Missing required checkout fields:', {
+            customerName,
+            customerPhone,
+            city,
+            itemCount: items.length,
+          });
+          return res.status(400).json({
+            error: 'Please fill in all required checkout fields and include at least one item.',
+          });
+        }
+
+        let subtotal = 0;
+        const resolvedItems = items.map((item) => {
+          const prod = state.products.find((p) => p.id === Number(item.product_id));
+          if (!prod) throw new Error(`Product ID ${item.product_id} not found`);
+          const rawQty = Number(item.quantity);
+          if (!Number.isFinite(rawQty) || rawQty <= 0) {
+            throw new Error(`Invalid item quantity for "${prod.name}". Quantity must be at least 1.`);
+          }
+          const qty = Math.floor(rawQty);
+          const selSize = (item.selected_size || 'Small').trim();
+          const sizeAvail = Number(
+            prod.inventory.size_stock?.[selSize] ?? prod.inventory.available_stock
+          );
+          if (qty > sizeAvail) {
+            throw new Error(`Insufficient stock for "${prod.name}" (${selSize}).`);
+          }
+          const lineTotal = prod.effective_price * qty;
+          subtotal += lineTotal;
+
+          const autoConfirm = Boolean(body.auto_confirm);
+          if (autoConfirm) {
+            if (prod.inventory.size_stock && selSize in prod.inventory.size_stock) {
+              prod.inventory.size_stock[selSize] = Math.max(
+                0,
+                Number(prod.inventory.size_stock[selSize] || 0) - qty
+              );
+              prod.inventory.available_stock = Object.values(prod.inventory.size_stock).reduce(
+                (s, n) => s + Number(n || 0),
+                0
+              );
+            } else {
+              prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
+            }
+            prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
+            prod.inventory.stock_status = computeStockStatus(
+              prod.inventory.available_stock,
+              prod.inventory.low_stock_threshold
             );
           } else {
-            prod.inventory.available_stock = Math.max(0, prod.inventory.available_stock - qty);
+            prod.inventory.reserved_stock = Number(prod.inventory.reserved_stock || 0) + qty;
           }
-          prod.inventory.sold_quantity = Number(prod.inventory.sold_quantity || 0) + qty;
-          prod.inventory.stock_status = computeStockStatus(
-            prod.inventory.available_stock,
-            prod.inventory.low_stock_threshold
-          );
-        } else {
-          prod.inventory.reserved_stock = Number(prod.inventory.reserved_stock || 0) + qty;
+
+          return {
+            product_id: prod.id,
+            product_name: prod.name,
+            product_sku: prod.sku,
+            product_image: prod.primary_image,
+            selected_size: selSize,
+            selected_color: item.selected_color || prod.color_name,
+            unit_price: prod.effective_price,
+            quantity: qty,
+            line_total: lineTotal,
+          };
+        });
+
+        const shipping =
+          state.settings.free_shipping_threshold > 0 &&
+          subtotal >= state.settings.free_shipping_threshold
+            ? 0
+            : state.settings.shipping_charges;
+        const totalAmount = subtotal + shipping;
+        const orderNumber = body.order_number_override
+          ? String(body.order_number_override).trim()
+          : `RER-${1001 + state.orders.length}`;
+        const autoConfirm = Boolean(body.auto_confirm);
+        const initialStatus = autoConfirm ? 'Confirmed' : 'Pending';
+
+        const shortItems = resolvedItems
+          .map((i) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size})`)
+          .join('\n');
+
+        const shortStoreMsg = [
+          `Assalam-o-Alaikum *${state.settings.store_name}*!`,
+          `I placed Order *#${orderNumber}*`,
+          shortItems,
+          `Total: *PKR ${totalAmount.toLocaleString('en-PK')}* (${body.payment_method || 'Cash on Delivery (COD)'})`,
+          `Name: ${customerName}`,
+          `City: ${city}`,
+          `Please confirm my order.`,
+        ].join('\n');
+
+        const detailedItemsLines = resolvedItems
+          .map(
+            (i, idx) =>
+              `${idx + 1}. *${i.product_name}* (${i.selected_size}${i.selected_color ? ` • ${i.selected_color}` : ''})\n   Qty: ${i.quantity} × PKR ${i.unit_price.toLocaleString('en-PK')} = *PKR ${i.line_total.toLocaleString('en-PK')}*`
+          )
+          .join('\n\n');
+
+        const detailedClientMsg = [
+          `Assalam-o-Alaikum *${customerName}*!`,
+          ``,
+          `Great news from *${state.settings.store_name}*! ✨`,
+          `Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
+          ``,
+          `━━━━━━━━━━━━━━━━━━━━`,
+          `🛍️ *ORDER CONFIRMATION: #${orderNumber}*`,
+          `📌 *Status:* Confirmed ✅`,
+          `💳 *Payment:* ${body.payment_method || 'Cash on Delivery (COD)'}`,
+          `━━━━━━━━━━━━━━━━━━━━`,
+          ``,
+          `👗 *PRODUCT & ORDER DETAILS*`,
+          detailedItemsLines,
+          ``,
+          `• Subtotal: PKR ${subtotal.toLocaleString('en-PK')}`,
+          `• Delivery: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
+          `💰 *Total Payable: PKR ${totalAmount.toLocaleString('en-PK')}*`,
+          ``,
+          `📍 *DELIVERY DETAILS*`,
+          `• Name: ${customerName}`,
+          `• Phone: ${customerPhone}`,
+          `• Address: ${shippingAddress}, ${city}`,
+          ...(body.order_notes ? [`• Notes: ${body.order_notes}`] : []),
+          ``,
+          `Thank you for shopping with *${state.settings.store_name}*!`,
+          `📞 Official WhatsApp: 03130888048`,
+        ].join('\n');
+
+        let cleanCustomerPhone = String(customerPhone || '').replace(/\D/g, '');
+        if (cleanCustomerPhone.startsWith('00')) cleanCustomerPhone = cleanCustomerPhone.slice(2);
+        else if (cleanCustomerPhone.startsWith('0') && cleanCustomerPhone.length === 11) {
+          cleanCustomerPhone = '92' + cleanCustomerPhone.slice(1);
+        } else if (cleanCustomerPhone.length === 10 && cleanCustomerPhone.startsWith('3')) {
+          cleanCustomerPhone = '92' + cleanCustomerPhone;
         }
 
-        return {
-          product_id: prod.id,
-          product_name: prod.name,
-          product_sku: prod.sku,
-          product_image: prod.primary_image,
-          selected_size: selSize,
-          selected_color: item.selected_color || prod.color_name,
-          unit_price: prod.effective_price,
-          quantity: qty,
-          line_total: lineTotal,
+        const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(detailedClientMsg)}`;
+        const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(shortStoreMsg)}`;
+
+        const newOrder = {
+          id: state.orders.length + 1,
+          order_number: orderNumber,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_email: body.customer_email || '',
+          shipping_address: shippingAddress,
+          city,
+          order_notes: body.order_notes || '',
+          payment_method: body.payment_method || 'Cash on Delivery (COD)',
+          subtotal,
+          shipping_charges: shipping,
+          total_amount: totalAmount,
+          status: initialStatus,
+          stock_deducted: autoConfirm,
+          stock_reserved: !autoConfirm,
+          whatsapp_message: shortStoreMsg,
+          whatsapp_url: storeWhatsappUrl,
+          customer_whatsapp_message: detailedClientMsg,
+          customer_whatsapp_url: customerWhatsappUrl,
+          store_whatsapp_message: shortStoreMsg,
+          store_whatsapp_url: storeWhatsappUrl,
+          store_whatsapp: '03130888048',
+          items: resolvedItems,
+          created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+          updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
         };
-      });
 
-      const shipping =
-        state.settings.free_shipping_threshold > 0 &&
-        subtotal >= state.settings.free_shipping_threshold
-          ? 0
-          : state.settings.shipping_charges;
-      const totalAmount = subtotal + shipping;
-      const orderNumber = `RER-${1001 + state.orders.length}`;
-      const autoConfirm = Boolean(body.auto_confirm);
-      const initialStatus = autoConfirm ? 'Confirmed' : 'Pending';
-
-      const shortItems = resolvedItems
-        .map((i) => `• ${i.quantity}x *${i.product_name}* (${i.selected_size})`)
-        .join('\n');
-
-      const shortStoreMsg = [
-        `Assalam-o-Alaikum *${state.settings.store_name}*!`,
-        `I placed Order *#${orderNumber}*`,
-        shortItems,
-        `Total: *PKR ${totalAmount.toLocaleString('en-PK')}* (${body.payment_method || 'Cash on Delivery (COD)'})`,
-        `Name: ${body.customer_name}`,
-        `City: ${body.city}`,
-        `Please confirm my order.`,
-      ].join('\n');
-
-      const detailedItemsLines = resolvedItems
-        .map(
-          (i, idx) =>
-            `${idx + 1}. *${i.product_name}* (${i.selected_size}${i.selected_color ? ` • ${i.selected_color}` : ''})\n   Qty: ${i.quantity} × PKR ${i.unit_price.toLocaleString('en-PK')} = *PKR ${i.line_total.toLocaleString('en-PK')}*`
-        )
-        .join('\n\n');
-
-      const detailedClientMsg = [
-        `Assalam-o-Alaikum *${body.customer_name}*!`,
-        ``,
-        `Great news from *${state.settings.store_name}*! ✨`,
-        `Your order *#${orderNumber}* has been *CONFIRMED* ✅ and is being prepared for dispatch.`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━`,
-        `🛍️ *ORDER CONFIRMATION: #${orderNumber}*`,
-        `📌 *Status:* Confirmed ✅`,
-        `💳 *Payment:* ${body.payment_method || 'Cash on Delivery (COD)'}`,
-        `━━━━━━━━━━━━━━━━━━━━`,
-        ``,
-        `👗 *PRODUCT & ORDER DETAILS*`,
-        detailedItemsLines,
-        ``,
-        `• Subtotal: PKR ${subtotal.toLocaleString('en-PK')}`,
-        `• Delivery: ${shipping === 0 ? 'FREE' : `PKR ${shipping.toLocaleString('en-PK')}`}`,
-        `💰 *Total Payable: PKR ${totalAmount.toLocaleString('en-PK')}*`,
-        ``,
-        `📍 *DELIVERY DETAILS*`,
-        `• Name: ${body.customer_name}`,
-        `• Phone: ${body.customer_phone}`,
-        `• Address: ${body.shipping_address}, ${body.city}`,
-        ...(body.order_notes ? [`• Notes: ${body.order_notes}`] : []),
-        ``,
-        `Thank you for shopping with *${state.settings.store_name}*!`,
-        `📞 Official WhatsApp: 03130888048`,
-      ].join('\n');
-
-      let cleanCustomerPhone = String(body.customer_phone || '').replace(/\D/g, '');
-      if (cleanCustomerPhone.startsWith('00')) cleanCustomerPhone = cleanCustomerPhone.slice(2);
-      else if (cleanCustomerPhone.startsWith('0') && cleanCustomerPhone.length === 11) {
-        cleanCustomerPhone = '92' + cleanCustomerPhone.slice(1);
-      } else if (cleanCustomerPhone.length === 10 && cleanCustomerPhone.startsWith('3')) {
-        cleanCustomerPhone = '92' + cleanCustomerPhone;
+        const existingIdx = state.orders.findIndex((o) => o.order_number === orderNumber);
+        if (existingIdx >= 0) {
+          state.orders[existingIdx] = newOrder;
+        } else {
+          state.orders.unshift(newOrder);
+        }
+        saveCloudState(state);
+        return res.status(201).json({ order: newOrder });
+      } catch (orderErr) {
+        console.error('[OrderInsertError] Failed to create order in POST /api/orders:', {
+          error: orderErr?.message || String(orderErr),
+          stack: orderErr?.stack,
+        });
+        return res.status(400).json({ error: orderErr?.message || 'Failed to save order' });
       }
-
-      const customerWhatsappUrl = `https://wa.me/${cleanCustomerPhone}?text=${encodeURIComponent(detailedClientMsg)}`;
-      const storeWhatsappUrl = `https://wa.me/923130888048?text=${encodeURIComponent(shortStoreMsg)}`;
-
-      const newOrder = {
-        id: state.orders.length + 1,
-        order_number: orderNumber,
-        customer_name: body.customer_name,
-        customer_phone: body.customer_phone,
-        customer_email: body.customer_email || '',
-        shipping_address: body.shipping_address,
-        city: body.city,
-        order_notes: body.order_notes || '',
-        payment_method: body.payment_method || 'Cash on Delivery (COD)',
-        subtotal,
-        shipping_charges: shipping,
-        total_amount: totalAmount,
-        status: initialStatus,
-        stock_deducted: autoConfirm,
-        stock_reserved: !autoConfirm,
-        whatsapp_message: shortStoreMsg,
-        whatsapp_url: storeWhatsappUrl,
-        customer_whatsapp_message: detailedClientMsg,
-        customer_whatsapp_url: customerWhatsappUrl,
-        store_whatsapp_message: shortStoreMsg,
-        store_whatsapp_url: storeWhatsappUrl,
-        store_whatsapp: '03130888048',
-        items: resolvedItems,
-        created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-      };
-
-      state.orders.unshift(newOrder);
-      saveCloudState(state);
-      return res.status(201).json({ order: newOrder });
     }
 
     // 5. Order Lookup
@@ -1109,6 +1149,12 @@ export default function handler(req, res) {
 
     return res.status(404).json({ error: `Endpoint not found: ${method} ${pathname}` });
   } catch (err) {
+    console.error('[APIUnhandledError]', {
+      method,
+      pathname,
+      error: err?.message || String(err),
+      stack: err?.stack,
+    });
     return res.status(400).json({ error: err.message || 'Server error' });
   }
 }
