@@ -29,6 +29,7 @@ import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../../components/storefront/ProductCard';
 import { UniversalVideoPlayer } from '../../components/common/UniversalVideoPlayer';
 import { ProductReviewsSection } from '../../components/storefront/ProductReviewsSection';
+import { trackMetaEvent } from '../../lib/trackMetaEvent';
 
 const PRODUCT_META_LOOKUP: Record<
   string,
@@ -127,6 +128,20 @@ export const ProductDetailPage: React.FC = () => {
         setQuantity(1);
         setFeedback(null);
         document.title = `${syncedProd.name} — ${syncedProd.collection_name} | ${settings?.store_name || 'Rang e Rosh'}`;
+
+        // Fire ViewContent Meta Pixel + CAPI event with deduplication
+        trackMetaEvent({
+          eventName: 'ViewContent',
+          eventId: `viewcontent_${syncedProd.sku || syncedProd.id}_${Date.now()}`,
+          customData: {
+            content_name: syncedProd.name,
+            content_category: syncedProd.category || '2-Piece Stitched Suit',
+            content_ids: [String(syncedProd.sku || syncedProd.id)],
+            content_type: 'product',
+            value: syncedProd.effective_price,
+            currency: settings?.currency || 'PKR',
+          },
+        }).catch(() => {});
       })
       .catch((err) => {
         setError(err.message || 'Product not found');

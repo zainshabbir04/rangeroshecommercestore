@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Order } from '../../types';
 import { api, formatPrice } from '../../services/api';
+import { trackMetaEvent } from '../../lib/trackMetaEvent';
 
 function buildClientWhatsAppUrl(phone: string, message: string): string {
   let digits = String(phone || '').replace(/\D/g, '');
@@ -63,6 +64,42 @@ export const OrderConfirmationPage: React.FC = () => {
       setEditableMessage(buildShortOrderMessage(order));
     }
   }, [order, orderNumber]);
+
+  useEffect(() => {
+    if (!order) return;
+    try {
+      const orderKey = order.order_number || order.id;
+      const trackedKey = `rer_meta_purchase_${orderKey}`;
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(trackedKey)) {
+        return;
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(trackedKey, '1');
+      }
+      trackMetaEvent({
+        eventName: 'Purchase',
+        orderId: orderKey,
+        customData: {
+          value: order.total_amount,
+          currency: 'PKR',
+          content_ids: (order.items || []).map((i) => String(i.product_sku || i.product_id)),
+          content_type: 'product',
+          num_items: (order.items || []).reduce((s, i) => s + i.quantity, 0),
+          order_id: order.order_number,
+        },
+        userData: {
+          fullName: order.customer_name,
+          phone: order.customer_phone,
+          email: order.customer_email,
+          city: order.city,
+          country: 'pk',
+          externalId: order.order_number,
+        },
+      }).catch(() => {});
+    } catch {
+      // non-blocking
+    }
+  }, [order]);
 
   const handleCopyMessage = () => {
     if (!editableMessage) return;

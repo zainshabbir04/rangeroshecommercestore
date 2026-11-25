@@ -21,6 +21,7 @@ import {
   normalizeWhatsAppNumber,
   tryAutoSendWhatsAppToClient,
 } from './whatsapp.ts';
+import { sendMetaCapiEvent } from '../lib/metaCapi.ts';
 
 dotenv.config();
 
@@ -245,6 +246,54 @@ function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFuncti
 // ============================================================================
 // PUBLIC STOREFRONT ENDPOINTS
 // ============================================================================
+
+app.post('/api/meta-capi', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+    const eventName = String(body.event_name || '').trim();
+    if (!eventName) {
+      res.status(400).json({ error: 'event_name is required.' });
+      return;
+    }
+
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const clientIp =
+      (Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : typeof forwardedFor === 'string'
+          ? forwardedFor.split(',')[0]
+          : (req.headers['x-real-ip'] as string) || req.socket?.remoteAddress || ''
+      )
+        ?.toString()
+        .trim() || undefined;
+
+    const userAgent =
+      (req.headers['user-agent'] || body.user_data?.client_user_agent || '')
+        .toString()
+        .trim() || undefined;
+
+    const result = await sendMetaCapiEvent(
+      {
+        event_name: eventName,
+        event_id: String(body.event_id || `evt_${Date.now()}`).trim(),
+        event_time: Number(body.event_time) || Math.floor(Date.now() / 1000),
+        event_source_url: body.event_source_url || (req.headers.referer as string) || undefined,
+        action_source: 'website',
+        user_data: body.user_data,
+        custom_data: body.custom_data,
+      },
+      {
+        ip: clientIp,
+        userAgent,
+        referer: req.headers.referer as string,
+      }
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Meta CAPI dispatch error' });
+  }
+});
 
 app.get('/api/storefront/init', (_req: Request, res: Response) => {
   try {

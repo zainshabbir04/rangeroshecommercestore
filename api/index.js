@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import metaCapiHandler from './meta-capi.js';
 
 const CLOUD_STATE_FILE = path.join('/tmp', 'rangerosh-cloud-store-v4.json');
 const STANDARD_SIZES = ['Small', 'Medium', 'Large', 'Extra Large'];
@@ -442,6 +443,11 @@ export default function handler(req, res) {
   const body = req.body || {};
 
   try {
+    // 0. Meta Conversions API (CAPI)
+    if (pathname === '/api/meta-capi') {
+      return metaCapiHandler(req, res);
+    }
+
     // 1. Storefront Init
     if (pathname === '/api/storefront/init' && method === 'GET') {
       const published = state.products.filter((p) => p.is_published);

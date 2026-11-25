@@ -481,6 +481,57 @@ async function runTests() {
   });
   assert.strictEqual(delProdRes.status, 200);
 
+  // 16. Meta Conversions API (/api/meta-capi) & SHA-256 PII Hashing Verification
+  console.log('1️⃣6️⃣ [META PIXEL & CAPI] Testing /api/meta-capi Endpoint, Deduplication Event ID & SHA-256 PII Hashing...');
+  const { sha256Hash, hashPhone, buildMetaUserData } = await import('../lib/metaCapi.ts');
+  const hashedEmail = sha256Hash('  Zara.Ahmed@Example.com ');
+  assert.strictEqual(hashedEmail?.length, 64, 'Email must be normalized and SHA-256 hashed to 64 hex chars');
+  const hashedPkPhone = hashPhone('0300-1234567');
+  const hashedIntlPhone = hashPhone('+92 300 1234567');
+  assert.strictEqual(hashedPkPhone, hashedIntlPhone, 'Local 03XX and +923XX phones must normalize to identical SHA-256 hash');
+
+  const builtUser = buildMetaUserData(
+    {
+      em: 'zara@example.com',
+      ph: '03001234567',
+      fn: 'Zara',
+      ln: 'Ahmed',
+      fbp: 'fb.1.1700000000.123456',
+      fbc: 'fb.1.1700000000.IwAR123',
+    },
+    '203.0.113.55',
+    'Mozilla/5.0 TestAgent'
+  );
+  assert.strictEqual(builtUser.fbp, 'fb.1.1700000000.123456', 'fbp must remain unhashed');
+  assert.strictEqual(builtUser.fbc, 'fb.1.1700000000.IwAR123', 'fbc must remain unhashed');
+  assert.strictEqual(builtUser.client_ip_address, '203.0.113.55', 'client_ip_address must remain unhashed');
+  assert.strictEqual(builtUser.client_user_agent, 'Mozilla/5.0 TestAgent', 'client_user_agent must remain unhashed');
+  assert.strictEqual(builtUser.em[0].length, 64, 'em must be SHA-256 hashed array');
+
+  const capiRes = await fetchJson('/api/meta-capi', {
+    method: 'POST',
+    body: JSON.stringify({
+      event_name: 'Purchase',
+      event_id: `order_${createdOrder.order_number}`,
+      custom_data: {
+        value: createdOrder.total_amount,
+        currency: 'PKR',
+        content_ids: ['RER-PRET-ANNA-01'],
+        content_type: 'product',
+        num_items: 1,
+      },
+      user_data: {
+        em: 'zara@example.com',
+        ph: '03001234567',
+        fn: 'Zara',
+        ln: 'Ahmed',
+      },
+    }),
+  });
+  assert.strictEqual(capiRes.status, 200);
+  assert.strictEqual(capiRes.data.event_id, `order_${createdOrder.order_number}`);
+  console.log('   ✅ Verified Meta CAPI SHA-256 PII hashing, unhashed fbp/fbc/IP/UA, and /api/meta-capi deduplication.');
+
   db.prepare('DELETE FROM inventory_transactions WHERE order_id = ?').run(createdOrder.id);
   db.prepare('DELETE FROM orders WHERE id = ?').run(createdOrder.id);
   db.prepare('DELETE FROM customers WHERE phone = ?').run('03001234567');

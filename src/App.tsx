@@ -20,6 +20,7 @@ import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminInventoryPage } from './pages/admin/AdminInventoryPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { FacebookPixel } from './components/common/FacebookPixel';
 
 export const App: React.FC = () => {
   return (
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
       <StoreProvider>
         <CartProvider>
           <BrowserRouter>
+            <FacebookPixel />
             <Routes>
               {/* Storefront Routes */}
               <Route element={<StorefrontLayout />}>

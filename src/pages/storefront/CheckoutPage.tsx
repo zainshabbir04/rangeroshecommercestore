@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   MessageCircle,
@@ -17,6 +17,7 @@ import {
 import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import { api, formatPrice } from '../../services/api';
+import { trackMetaEvent } from '../../lib/trackMetaEvent';
 
 export const CheckoutPage: React.FC = () => {
   const { items, subtotal, shippingCharges, grandTotal, clearCart } = useCart();
@@ -38,6 +39,23 @@ export const CheckoutPage: React.FC = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const initiatedRef = useRef(false);
+
+  useEffect(() => {
+    if (items.length > 0 && !initiatedRef.current) {
+      initiatedRef.current = true;
+      trackMetaEvent({
+        eventName: 'InitiateCheckout',
+        customData: {
+          content_ids: items.map((i) => String(i.sku || i.product_id)),
+          content_type: 'product',
+          value: grandTotal,
+          currency: settings?.currency || 'PKR',
+          num_items: items.reduce((s, i) => s + i.quantity, 0),
+        },
+      }).catch(() => {});
+    }
+  }, [items, grandTotal, settings?.currency]);
 
   if (items.length === 0) {
     return (
@@ -99,6 +117,40 @@ export const CheckoutPage: React.FC = () => {
       });
 
       const createdOrder = res.order;
+
+      // Fire Purchase Meta Pixel + CAPI event with deterministic order_${order_number} deduplication ID
+      try {
+        const orderKey = createdOrder.order_number || createdOrder.id;
+        const trackedKey = `rer_meta_purchase_${orderKey}`;
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(trackedKey, '1');
+        }
+        trackMetaEvent({
+          eventName: 'Purchase',
+          orderId: orderKey,
+          customData: {
+            value: createdOrder.total_amount,
+            currency: settings?.currency || 'PKR',
+            content_ids: (createdOrder.items || []).map((i) =>
+              String(i.product_sku || i.product_id)
+            ),
+            content_type: 'product',
+            num_items: (createdOrder.items || []).reduce((s, i) => s + i.quantity, 0),
+            order_id: createdOrder.order_number,
+          },
+          userData: {
+            fullName: createdOrder.customer_name,
+            phone: createdOrder.customer_phone,
+            email: createdOrder.customer_email,
+            city: createdOrder.city,
+            country: 'pk',
+            externalId: createdOrder.order_number,
+          },
+        }).catch(() => {});
+      } catch {
+        // non-blocking
+      }
+
       clearCart();
       await refreshStorefront();
 

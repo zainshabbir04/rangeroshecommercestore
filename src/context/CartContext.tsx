@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { CartItem, Product } from '../types';
 import { useStore } from './StoreContext';
+import { trackMetaEvent } from '../lib/trackMetaEvent';
 
 interface CartContextValue {
   items: CartItem[];
@@ -167,6 +168,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (openDrawer) {
       setIsCartOpen(true);
     }
+
+    // Fire AddToCart Meta Pixel + CAPI event with deduplication
+    trackMetaEvent({
+      eventName: 'AddToCart',
+      customData: {
+        content_name: product.name,
+        content_category: product.category || '2-Piece Stitched Suit',
+        content_ids: [String(product.sku || product.id)],
+        content_type: 'product',
+        value: product.effective_price * quantity,
+        currency: settings?.currency || 'PKR',
+        num_items: quantity,
+      },
+    }).catch(() => {});
 
     return {
       success: true,
