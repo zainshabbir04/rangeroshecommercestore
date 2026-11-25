@@ -3,6 +3,11 @@ main = "worker/index.ts"
 compatibility_date = "2025-02-01"
 compatibility_flags = ["nodejs_compat"]
 
+routes = [
+  { pattern = "rangerosh.com", custom_domain = true },
+  { pattern = "www.rangerosh.com", custom_domain = true }
+]
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
