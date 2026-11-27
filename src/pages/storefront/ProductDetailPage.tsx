@@ -30,6 +30,7 @@ import { ProductCard } from '../../components/storefront/ProductCard';
 import { UniversalVideoPlayer } from '../../components/common/UniversalVideoPlayer';
 import { ProductReviewsSection } from '../../components/storefront/ProductReviewsSection';
 import { trackMetaEvent } from '../../lib/trackMetaEvent';
+import { ttqTrack } from '../../lib/tiktokPixel';
 
 const PRODUCT_META_LOOKUP: Record<
   string,
@@ -130,9 +131,10 @@ export const ProductDetailPage: React.FC = () => {
         document.title = `${syncedProd.name} — ${syncedProd.collection_name} | ${settings?.store_name || 'Rang e Rosh'}`;
 
         // Fire ViewContent Meta Pixel + CAPI event with deduplication
+        const viewEventId = `viewcontent_${syncedProd.sku || syncedProd.id}_${Date.now()}`;
         trackMetaEvent({
           eventName: 'ViewContent',
-          eventId: `viewcontent_${syncedProd.sku || syncedProd.id}_${Date.now()}`,
+          eventId: viewEventId,
           customData: {
             content_name: syncedProd.name,
             content_category: syncedProd.category || '2-Piece Stitched Suit',
@@ -142,6 +144,31 @@ export const ProductDetailPage: React.FC = () => {
             currency: settings?.currency || 'PKR',
           },
         }).catch(() => {});
+
+        // Fire TikTok Pixel ViewContent event
+        ttqTrack(
+          'ViewContent',
+          {
+            content_id: String(syncedProd.sku || syncedProd.id),
+            content_type: 'product',
+            content_name: syncedProd.name,
+            content_category: syncedProd.category || '2-Piece Stitched Suit',
+            quantity: 1,
+            price: syncedProd.effective_price,
+            value: syncedProd.effective_price,
+            currency: settings?.currency || 'PKR',
+            contents: [
+              {
+                content_id: String(syncedProd.sku || syncedProd.id),
+                content_type: 'product',
+                content_name: syncedProd.name,
+                quantity: 1,
+                price: syncedProd.effective_price,
+              },
+            ],
+          },
+          { event_id: viewEventId }
+        );
       })
       .catch((err) => {
         setError(err.message || 'Product not found');

@@ -18,6 +18,7 @@ import { useCart } from '../../context/CartContext';
 import { useStore } from '../../context/StoreContext';
 import { api, formatPrice } from '../../services/api';
 import { trackMetaEvent } from '../../lib/trackMetaEvent';
+import { ttqTrack } from '../../lib/tiktokPixel';
 
 export const CheckoutPage: React.FC = () => {
   const { items, subtotal, shippingCharges, grandTotal, clearCart } = useCart();
@@ -54,6 +55,21 @@ export const CheckoutPage: React.FC = () => {
           num_items: items.reduce((s, i) => s + i.quantity, 0),
         },
       }).catch(() => {});
+
+      // Fire TikTok Pixel InitiateCheckout event
+      ttqTrack('InitiateCheckout', {
+        content_type: 'product',
+        value: grandTotal,
+        currency: settings?.currency || 'PKR',
+        quantity: items.reduce((s, i) => s + i.quantity, 0),
+        contents: items.map((i) => ({
+          content_id: String(i.sku || i.product_id),
+          content_type: 'product',
+          content_name: i.name,
+          quantity: i.quantity,
+          price: i.unit_price,
+        })),
+      });
     }
   }, [items, grandTotal, settings?.currency]);
 
@@ -122,8 +138,10 @@ export const CheckoutPage: React.FC = () => {
       try {
         const orderKey = createdOrder.order_number || createdOrder.id;
         const trackedKey = `rer_meta_purchase_${orderKey}`;
+        const ttqTrackedKey = `rer_tiktok_completepayment_${orderKey}`;
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.setItem(trackedKey, '1');
+          sessionStorage.setItem(ttqTrackedKey, '1');
         }
         trackMetaEvent({
           eventName: 'Purchase',
@@ -147,6 +165,26 @@ export const CheckoutPage: React.FC = () => {
             externalId: createdOrder.order_number,
           },
         }).catch(() => {});
+
+        // Fire TikTok Pixel CompletePayment event
+        ttqTrack(
+          'CompletePayment',
+          {
+            content_type: 'product',
+            value: createdOrder.total_amount,
+            currency: settings?.currency || 'PKR',
+            quantity: (createdOrder.items || []).reduce((s, i) => s + i.quantity, 0),
+            order_id: createdOrder.order_number,
+            contents: (createdOrder.items || []).map((i) => ({
+              content_id: String(i.product_sku || i.product_id),
+              content_type: 'product',
+              content_name: i.product_name,
+              quantity: i.quantity,
+              price: i.unit_price,
+            })),
+          },
+          { event_id: `order_${orderKey}` }
+        );
       } catch {
         // non-blocking
       }

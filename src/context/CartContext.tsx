@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { CartItem, Product } from '../types';
 import { useStore } from './StoreContext';
 import { trackMetaEvent } from '../lib/trackMetaEvent';
+import { ttqTrack } from '../lib/tiktokPixel';
 
 interface CartContextValue {
   items: CartItem[];
@@ -182,6 +183,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         num_items: quantity,
       },
     }).catch(() => {});
+
+    // Fire TikTok Pixel AddToCart event
+    ttqTrack('AddToCart', {
+      content_id: String(product.sku || product.id),
+      content_type: 'product',
+      content_name: product.name,
+      content_category: product.category || '2-Piece Stitched Suit',
+      quantity,
+      price: product.effective_price,
+      value: product.effective_price * quantity,
+      currency: settings?.currency || 'PKR',
+      contents: [
+        {
+          content_id: String(product.sku || product.id),
+          content_type: 'product',
+          content_name: product.name,
+          quantity,
+          price: product.effective_price,
+        },
+      ],
+    });
 
     return {
       success: true,

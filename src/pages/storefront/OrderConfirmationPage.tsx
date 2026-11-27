@@ -12,6 +12,7 @@ import {
 import { Order } from '../../types';
 import { api, formatPrice } from '../../services/api';
 import { trackMetaEvent } from '../../lib/trackMetaEvent';
+import { ttqTrack } from '../../lib/tiktokPixel';
 
 function buildClientWhatsAppUrl(phone: string, message: string): string {
   let digits = String(phone || '').replace(/\D/g, '');
@@ -70,6 +71,32 @@ export const OrderConfirmationPage: React.FC = () => {
     try {
       const orderKey = order.order_number || order.id;
       const trackedKey = `rer_meta_purchase_${orderKey}`;
+      const ttqTrackedKey = `rer_tiktok_completepayment_${orderKey}`;
+
+      if (typeof sessionStorage === 'undefined' || !sessionStorage.getItem(ttqTrackedKey)) {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(ttqTrackedKey, '1');
+        }
+        ttqTrack(
+          'CompletePayment',
+          {
+            content_type: 'product',
+            value: order.total_amount,
+            currency: 'PKR',
+            quantity: (order.items || []).reduce((s, i) => s + i.quantity, 0),
+            order_id: order.order_number,
+            contents: (order.items || []).map((i) => ({
+              content_id: String(i.product_sku || i.product_id),
+              content_type: 'product',
+              content_name: i.product_name,
+              quantity: i.quantity,
+              price: i.unit_price,
+            })),
+          },
+          { event_id: `order_${orderKey}` }
+        );
+      }
+
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(trackedKey)) {
         return;
       }

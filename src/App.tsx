@@ -21,6 +21,7 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminInventoryPage } from './pages/admin/AdminInventoryPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { FacebookPixel } from './components/common/FacebookPixel';
+import { TikTokPixel } from './components/common/TikTokPixel';
 
 export const App: React.FC = () => {
   return (
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
         <CartProvider>
           <BrowserRouter>
             <FacebookPixel />
+            <TikTokPixel />
             <Routes>
               {/* Storefront Routes */}
               <Route element={<StorefrontLayout />}>
