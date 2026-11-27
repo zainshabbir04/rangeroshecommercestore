@@ -448,12 +448,13 @@ export const AdminSettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                placeholder="e.g. CXXXXXXXXXXXXXXXXXXX"
+                placeholder="e.g. DC4QQU3C77U0A5LSPG3G"
                 value={
                   form.tiktok_pixel_id ??
-                  (typeof localStorage !== 'undefined'
-                    ? localStorage.getItem('rer_tiktok_pixel_id') || ''
-                    : '')
+                  ((typeof localStorage !== 'undefined'
+                    ? localStorage.getItem('rer_tiktok_pixel_id')
+                    : null) ||
+                    'DC4QQU3C77U0A5LSPG3G')
                 }
                 onChange={(e) => setForm({ ...form, tiktok_pixel_id: e.target.value })}
                 className="w-full p-2.5 bg-[#FAF6F0] border border-[#3A1042]/40 rounded-xs font-mono"

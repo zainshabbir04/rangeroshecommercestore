@@ -25,7 +25,7 @@
       rel="stylesheet"
     />
     <!-- TikTok Pixel Code Start -->
-    <meta name="tiktok-pixel-id" content="%VITE_TIKTOK_PIXEL_ID%" />
+    <meta name="tiktok-pixel-id" content="DC4QQU3C77U0A5LSPG3G" />
     <script>
       !function (w, d, t) {
         w.TiktokAnalyticsObject = t;
@@ -80,22 +80,8 @@
           e.parentNode.insertBefore(n, e);
         };
 
-        try {
-          var metaEl = d.querySelector('meta[name="tiktok-pixel-id"]');
-          var metaId = metaEl ? (metaEl.getAttribute('content') || '').trim() : '';
-          if (metaId.indexOf('%') === 0) metaId = '';
-          var savedId = '';
-          try {
-            savedId = (w.localStorage && w.localStorage.getItem('rer_tiktok_pixel_id')) || '';
-          } catch (err) {}
-          var pixelId = metaId || savedId || w.__RER_TIKTOK_PIXEL_ID__ || '';
-          if (pixelId) {
-            ttq.load(pixelId);
-          }
-          ttq.page();
-        } catch (err) {
-          ttq.page();
-        }
+        ttq.load('DC4QQU3C77U0A5LSPG3G');
+        ttq.page();
       }(window, document, 'ttq');
     </script>
     <!-- TikTok Pixel Code End -->

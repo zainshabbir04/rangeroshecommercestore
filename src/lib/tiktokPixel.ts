@@ -26,6 +26,8 @@ export type StandardTikTokEventName =
   | 'Contact'
   | 'Search';
 
+export const DEFAULT_TIKTOK_PIXEL_ID = 'DC4QQU3C77U0A5LSPG3G';
+
 export function getTikTokPixelId(): string {
   const envId =
     (typeof import.meta !== 'undefined' &&
@@ -66,7 +68,7 @@ export function getTikTokPixelId(): string {
     }
   }
 
-  return '';
+  return DEFAULT_TIKTOK_PIXEL_ID;
 }
 
 export const TIKTOK_PIXEL_ID: string = getTikTokPixelId();
