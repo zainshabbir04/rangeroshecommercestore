@@ -97,6 +97,8 @@ export interface StoreSettings {
   youtube_url: string;
   tiktok_url: string;
   facebook_url: string;
+  tiktok_pixel_id?: string;
+  meta_pixel_id?: string;
   payment_methods: string[];
   updated_at: string;
 }

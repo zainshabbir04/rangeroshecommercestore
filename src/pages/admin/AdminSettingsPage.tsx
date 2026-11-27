@@ -83,6 +83,18 @@ export const AdminSettingsPage: React.FC = () => {
         .map((m) => m.trim())
         .filter(Boolean);
 
+      if (form.tiktok_pixel_id !== undefined) {
+        try {
+          if (form.tiktok_pixel_id.trim()) {
+            localStorage.setItem('rer_tiktok_pixel_id', form.tiktok_pixel_id.trim());
+          } else {
+            localStorage.removeItem('rer_tiktok_pixel_id');
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       await api.updateSettings({
         ...form,
         payment_methods: methods,
@@ -427,6 +439,36 @@ export const AdminSettingsPage: React.FC = () => {
                 value={form.tiktok_url || ''}
                 onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })}
                 className="w-full p-2.5 bg-[#FAF6F0] border border-[#E5D9C5] rounded-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold uppercase tracking-wider mb-1 text-[#3A1042]">
+                TikTok Ads Pixel ID (ttq.load)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. CXXXXXXXXXXXXXXXXXXX"
+                value={
+                  form.tiktok_pixel_id ??
+                  (typeof localStorage !== 'undefined'
+                    ? localStorage.getItem('rer_tiktok_pixel_id') || ''
+                    : '')
+                }
+                onChange={(e) => setForm({ ...form, tiktok_pixel_id: e.target.value })}
+                className="w-full p-2.5 bg-[#FAF6F0] border border-[#3A1042]/40 rounded-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold uppercase tracking-wider mb-1 text-[#2E6F73]">
+                Meta (Facebook) Pixel ID
+              </label>
+              <input
+                type="text"
+                value={form.meta_pixel_id || '2635132979997484'}
+                onChange={(e) => setForm({ ...form, meta_pixel_id: e.target.value })}
+                className="w-full p-2.5 bg-[#FAF6F0] border border-[#2E6F73]/40 rounded-xs font-mono"
               />
             </div>
           </div>
